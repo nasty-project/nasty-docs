@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="webui/src/lib/assets/nasty-white.svg" width="300" alt="NASty — Storage with attitude. A modern NAS appliance built on bcachefs, designed for homelabs and small teams." />
+  <img src="https://raw.githubusercontent.com/nasty-project/nasty/main/webui/src/lib/assets/nasty-white.svg" width="300" alt="NASty — Storage with attitude. A modern NAS appliance built on bcachefs, designed for homelabs and small teams." />
 </p>
 
 ---
@@ -8,9 +8,12 @@
 
 NASty is a self-contained NAS operating system that turns commodity hardware into a full-featured storage appliance.
 
-- **Storage pools** with compression, checksumming, and tiering
+- **Filesystems** with compression, checksumming, erasure coding, and tiering
 - **Subvolumes** with O(1) snapshots and COW cloning
 - **File sharing** via NFS, SMB, iSCSI, and NVMe-oF
+- **Virtual machines** with QEMU/KVM and browser-based VNC console
+- **Apps** for running containerized services on the appliance
+- **Alerts** with configurable rules for filesystem usage, disk health, and more
 - **Web UI** for managing everything from a browser
 - **Web terminal** with built-in shell access
 - **Atomic updates** with one-click rollback
@@ -31,7 +34,7 @@ NASty includes a CSI driver for dynamic volume provisioning in Kubernetes cluste
 - [nasty-csi](https://github.com/nasty-project/nasty-csi) -- CSI driver
 - [nasty-chart](https://github.com/nasty-project/nasty-chart) -- Helm chart
 - [nasty-go](https://github.com/nasty-project/nasty-go) -- Go client library
-- [nasty-plugin](https://github.com/nasty-project/nasty-plugin) -- kubectl plugin
+- [nasty-plugin](https://github.com/nasty-project/nasty-plugin) -- kubectl plugin (`kubectl nasty`)
 
 ## Protocols
 
