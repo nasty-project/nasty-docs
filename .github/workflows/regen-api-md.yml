@@ -1,0 +1,93 @@
+# Regenerate `api.md` from the engine's RPC registry once a day.
+#
+# `api.md` used to live in `nasty-project/nasty` next to the source it
+# was generated from. After it moved here in 2026-03 the regeneration
+# pipeline didn't come with it, so the file went stale.
+#
+# This workflow checks out the nasty repo's `main`, runs
+# `cargo run -p nasty-apidoc` (which walks every `JsonSchema`-derived
+# type and emits the markdown), copies the result on top of this
+# repo's `api.md`, and commits if anything changed.
+#
+# Up to ~24h lag behind the engine's RPC surface — fine for an API
+# reference, and avoids the cross-repo PAT setup the on-every-push
+# variant would need.
+
+name: Regenerate api.md
+
+on:
+  schedule:
+    # 04:00 UTC = quiet on the runner side, well after the integration
+    # tests have finished their nightly cycle in the source repo.
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+permissions:
+  # Needed for the final `git push` of the regenerated file.
+  contents: write
+
+concurrency:
+  group: regen-api-md
+  # Cancel any already-running daily — if the previous one is still
+  # going we'd just race it to the same commit.
+  cancel-in-progress: true
+
+jobs:
+  regen:
+    runs-on: ubuntu-latest
+    steps:
+      # 1. Check this repo out so we can commit the result back.
+      - name: Checkout nasty-docs
+        uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      # 2. Check the source repo (nasty) out into a sibling dir. The
+      #    nasty-apidoc binary writes to `<workspace>/docs/api.md`
+      #    relative to `engine/Cargo.toml`, so we capture from there.
+      - name: Checkout nasty
+        uses: actions/checkout@v5
+        with:
+          repository: nasty-project/nasty
+          ref: main
+          path: nasty
+
+      # 3. Rust toolchain pinned to what the source repo uses. Keep in
+      #    sync with `engine/rust-toolchain.toml` in the nasty repo —
+      #    bumping there is the trigger to bump here.
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@1.95.0
+
+      # 4. Cache cargo artifacts across runs so this stays a 1-2 min
+      #    job in steady state. Cold cache is ~10 min; cache hit is
+      #    a couple of minutes for the build + the apidoc run itself.
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: nasty/engine -> target
+
+      - name: Generate api.md
+        working-directory: nasty/engine
+        run: cargo run --release -p nasty-apidoc
+
+      - name: Copy generated api.md
+        run: cp nasty/docs/api.md api.md
+
+      # 5. Commit only if anything moved. `git diff --quiet` returns
+      #    1 (= changes present) when api.md content drifted from the
+      #    last checked-in version. No-op runs are normal between
+      #    real engine changes.
+      - name: Commit if changed
+        run: |
+          if git diff --quiet api.md; then
+            echo "api.md unchanged, nothing to commit"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          # Source-repo HEAD SHA goes in the commit message so it's
+          # obvious which engine state the regeneration captured.
+          NASTY_SHA=$(git -C nasty rev-parse --short HEAD)
+          git add api.md
+          git commit -m "api.md: regenerate from nasty@${NASTY_SHA}"
+          git push
