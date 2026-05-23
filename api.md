@@ -965,6 +965,54 @@ Return raw `bcachefs fs usage` output for a filesystem.
 | `reserved_bytes` | integer | yes | Reserved bytes. |
 
 
+### `fs.tpm.status`
+
+Report TPM2 host capability and per-filesystem bind state. `tpm_available` reflects whether `/dev/tpmrm0` is present; `bound` reflects whether a sealed-key blob exists for this filesystem.
+
+**Role:** `any`
+
+**Params:** `{"name": string}`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bound` | boolean | yes | A `<KEYS_DIR>/<name>.tpm` sealed blob exists for this filesystem. |
+| `tpm_available` | boolean | yes | Host has a usable TPM 2.0 resource manager (`/dev/tpmrm0`). |
+
+
+### `fs.tpm.bind`
+
+Seal the filesystem's stored encryption key with the host TPM2 (PCR-7 bound). Writes the sealed blob next to the plaintext `.key`; the plaintext is retained as a recovery path until `fs.key.delete` is invoked. Errors when the host has no usable TPM2 or no stored `.key` exists.
+
+**Role:** `admin`
+
+**Params:** `{"name": string}`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bound` | boolean | yes | A `<KEYS_DIR>/<name>.tpm` sealed blob exists for this filesystem. |
+| `tpm_available` | boolean | yes | Host has a usable TPM 2.0 resource manager (`/dev/tpmrm0`). |
+
+
+### `fs.tpm.unbind`
+
+Remove the TPM2-sealed copy of the encryption key. The plaintext `.key` is unaffected. No-op success when no sealed blob exists.
+
+**Role:** `admin`
+
+**Params:** `{"name": string}`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bound` | boolean | yes | A `<KEYS_DIR>/<name>.tpm` sealed blob exists for this filesystem. |
+| `tpm_available` | boolean | yes | Host has a usable TPM 2.0 resource manager (`/dev/tpmrm0`). |
+
+
 ## Filesystem Devices
 
 ### `fs.device.add`
