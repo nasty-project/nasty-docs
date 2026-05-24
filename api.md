@@ -290,6 +290,26 @@ Return current version and latest available version.
 |-------|------|:--------:|-------------|
 | `channel` | `ReleaseChannel` | yes | Active release channel. |
 | `current_version` | string | yes | Currently installed version (short commit SHA or `dev`). |
+| `error` | string | no | Human-readable explanation when the latest-version lookup failed
+(GitHub unreachable, rate-limited, refused token, …). Populated
+by `check()`; `version()` leaves it `None`. Surfaced in the UI
+as an amber banner so operators don't see a silent dash when
+GitHub is misbehaving — previously the failure mode was
+indistinguishable from "no check has ever run". |
+| `inputs` | `VersionInputInfo`[] | no | Snapshot of each tracked flake input (`nasty`, `nixpkgs`,
+`bcachefs-tools`) — name, URL, locked rev. Embedded here so the
+Version page can render all three pinned components in the
+summary card without making a second RPC. None when the
+engine can't read the local flake (parse error, fresh install
+pre-bootstrap, etc); the UI falls back to the nasty rev alone
+in that case. |
+| `last_attempt` | string | no | Result of the last upgrade-unit invocation: `"success"`, `"failed"`,
+or `None` if no upgrade has ever been kicked off (or it's still
+running). When `"failed"`, the engine forces `update_available =
+Some(true)` regardless of the tag comparison so the WebUI keeps
+offering Upgrade — a failed rebuild often leaves `flake.lock`
+pointing at the target tag, which would otherwise make the check
+look like a no-op. |
 | `latest_version` | string | no | Latest upstream version, if the check has been performed. |
 | `update_available` | boolean | no | Whether a newer version is available. None if the check has not been run yet. |
 
@@ -306,6 +326,26 @@ Check for available updates against the upstream repository.
 |-------|------|:--------:|-------------|
 | `channel` | `ReleaseChannel` | yes | Active release channel. |
 | `current_version` | string | yes | Currently installed version (short commit SHA or `dev`). |
+| `error` | string | no | Human-readable explanation when the latest-version lookup failed
+(GitHub unreachable, rate-limited, refused token, …). Populated
+by `check()`; `version()` leaves it `None`. Surfaced in the UI
+as an amber banner so operators don't see a silent dash when
+GitHub is misbehaving — previously the failure mode was
+indistinguishable from "no check has ever run". |
+| `inputs` | `VersionInputInfo`[] | no | Snapshot of each tracked flake input (`nasty`, `nixpkgs`,
+`bcachefs-tools`) — name, URL, locked rev. Embedded here so the
+Version page can render all three pinned components in the
+summary card without making a second RPC. None when the
+engine can't read the local flake (parse error, fresh install
+pre-bootstrap, etc); the UI falls back to the nasty rev alone
+in that case. |
+| `last_attempt` | string | no | Result of the last upgrade-unit invocation: `"success"`, `"failed"`,
+or `None` if no upgrade has ever been kicked off (or it's still
+running). When `"failed"`, the engine forces `update_available =
+Some(true)` regardless of the tag comparison so the WebUI keeps
+offering Upgrade — a failed rebuild often leaves `flake.lock`
+pointing at the target tag, which would otherwise make the check
+look like a no-op. |
 | `latest_version` | string | no | Latest upstream version, if the check has been performed. |
 | `update_available` | boolean | no | Whether a newer version is available. None if the check has not been run yet. |
 
@@ -338,6 +378,60 @@ Return the current update operation status and log.
 | `reboot_required` | boolean | yes | True when the activated system has a different kernel than the booted one |
 | `state` | string | yes | "idle", "running", "success", "failed" |
 | `webui_changed` | boolean | yes | True when the webui store path changed during this update (browser reload needed) |
+
+
+### `system.update.build_dir.get`
+
+Return the configured Nix build-dir spillover path (if any) plus the live list of mounted bcachefs pools eligible to host the sandbox. Useful on small-rootfs installs where the default `/tmp` (tmpfs) doesn't have room for kernel-module / Rust compile sandboxes.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `available_pools` | string[] | yes | Mounted bcachefs pool roots under `/fs/` discovered live from
+`/proc/mounts`. Used by the WebUI to populate the dropdown of
+viable spillover targets. Empty on single-disk (mode-1)
+installs that don't have a separate data pool — the feature
+can't help those boxes and the UI hides the option. |
+| `path` | string | no | Persisted spillover path (`None` = unset, builds use the
+default `/tmp` → tmpfs → root path). Returned verbatim from
+the on-disk setting, **not** the auto-resolved
+`<pool>/.nasty-nix-build` derivation — the WebUI dropdown
+stores pool roots, the engine resolves at script-render time. |
+| `resolved` | string | no | Resolved sandbox path the engine would actually pass to
+`nixos-rebuild` (i.e. `<pool>/.nasty-nix-build`). Surfaced so
+the WebUI can show operators where the spillover will land
+without re-implementing the derivation rule. |
+
+
+### `system.update.build_dir.set`
+
+Set or clear the Nix build-dir spillover path. Pass `{"path": "/fs/<pool>"}` to enable (must match one of the mounted bcachefs pools reported by `build_dir.get`) or `{"path": null}` to disable. When set, the engine runs upgrade scripts with `NIX_REMOTE=local` and `--option build-dir <pool>/.nasty-nix-build` so the sandbox spills onto bcachefs instead of tmpfs/root.
+
+**Role:** `admin`
+
+**Params:** `{"path": string | null}`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `available_pools` | string[] | yes | Mounted bcachefs pool roots under `/fs/` discovered live from
+`/proc/mounts`. Used by the WebUI to populate the dropdown of
+viable spillover targets. Empty on single-disk (mode-1)
+installs that don't have a separate data pool — the feature
+can't help those boxes and the UI hides the option. |
+| `path` | string | no | Persisted spillover path (`None` = unset, builds use the
+default `/tmp` → tmpfs → root path). Returned verbatim from
+the on-disk setting, **not** the auto-resolved
+`<pool>/.nasty-nix-build` derivation — the WebUI dropdown
+stores pool roots, the engine resolves at script-render time. |
+| `resolved` | string | no | Resolved sandbox path the engine would actually pass to
+`nixos-rebuild` (i.e. `<pool>/.nasty-nix-build`). Surfaced so
+the WebUI can show operators where the spillover will land
+without re-implementing the derivation rule. |
 
 
 ### `system.version.get`
