@@ -195,7 +195,13 @@ Return hostname, OS version, uptime, bcachefs-tools version info.
 | `bcachefs_debug_checks` | boolean | yes | Whether the RUNNING bcachefs module was built with debug checks.
 Only true when debug checks are configured AND the system has been rebooted into it. |
 | `bcachefs_debug_symbols` | boolean | yes | Whether the loaded bcachefs kernel module contains debug symbols. |
-| `bcachefs_is_custom` | boolean | yes | True when the RUNNING bcachefs module version differs from the default. |
+| `bcachefs_is_custom` | boolean | yes | True when the running bcachefs kernel module version doesn't
+match the wrapper's currently-pinned `bcachefs-tools` ref —
+i.e. an upgrade or pin change has activated a new generation
+but the box hasn't been rebooted into it yet. The WebUI uses
+this to surface a top-bar "reboot pending" cue. False when
+the running version probe fails (unknown) or the wrapper has
+no pinned ref to compare against. |
 | `bcachefs_pinned_ref` | string | no | The ref currently pinned in `/etc/nixos/flake.lock` for `bcachefs-tools`. |
 | `bcachefs_version` | string | yes | Output of `bcachefs version` (first line). |
 | `engine_built` | string | no | Build timestamp of the engine binary. |
@@ -2873,8 +2879,15 @@ Enum: `celsius`, `fahrenheit`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `name` | string | yes | Flake input name (e.g. `nixpkgs`). |
+| `name` | string | yes | Flake input name (e.g. `bcachefs-tools`, `nasty`). |
 | `rev` | string | no | Locked commit SHA from `/etc/nixos/flake.lock` (shortened to 12 chars). |
+| `tag` | string | no | Human-meaningful ref string from `flake.lock`'s
+`nodes[<name>].original.ref` — typically a tag like `v1.38.3`
+or a branch name like `main`. When present, prefer this for
+display over `rev` (which is just a 12-char SHA prefix).
+`None` when the lock node has no `original.ref` set (e.g.
+inputs referenced by raw commit hash, or inputs the lock
+doesn't carry an `original` block for). |
 | `url` | string | yes | Exact `input.url` string from `/etc/nixos/flake.nix`. |
 
 ### `VersionSwitchInput`
