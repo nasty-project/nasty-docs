@@ -853,6 +853,13 @@ Format and mount a new bcachefs filesystem.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `background_target` | string | no | Target label for background migration. |
+| `bind_to_tpm` | boolean | no | Whether to seal the stored key with the host's TPM2 immediately
+after creation (PCR-7 bound, same shape as `fs.tpm.bind`). Saves
+the operator the WebUI "Bind to TPM" round-trip and avoids the
+brief window between FS creation and binding when the plaintext
+`.key` exists alone on disk. Requires `encryption == true`,
+`store_key != false`, and a usable TPM2 on the host — request
+is rejected upfront when any are missing. |
 | `bucket_size` | string | no | Bucket size in bytes (e.g. `"512k"`, `"1M"`). Affects allocation granularity. |
 | `compression` | string | no | Inline compression algorithm (e.g. `lz4`, `zstd`, `none`). |
 | `data_checksum` | string | no | Data checksum algorithm (e.g. `crc32c`, `crc64`, `xxhash`, `none`). |
