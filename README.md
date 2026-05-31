@@ -1,49 +1,40 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/nasty-project/nasty/main/webui/src/lib/assets/nasty-white.svg" width="300" alt="NASty — Storage with attitude. A modern NAS appliance built on bcachefs, designed for homelabs and small teams." />
+  <img src="https://raw.githubusercontent.com/nasty-project/nasty/main/webui/src/lib/assets/nasty-white.svg" width="300" alt="NASty" />
+</p>
+
+<p align="center">
+  <strong>Reference documentation for the <a href="https://github.com/nasty-project/nasty">NASty</a> NAS appliance.</strong>
 </p>
 
 ---
 
-## What is NASty?
+This repository holds the long-form docs for [nasty-project/nasty](https://github.com/nasty-project/nasty). For the project itself — features, installation, screenshots, contributing — start there.
 
-NASty is a self-contained NAS operating system that turns commodity hardware into a full-featured storage appliance.
+## What's here
 
-- **Filesystems** with compression, checksumming, erasure coding, and tiering
-- **Subvolumes** with O(1) snapshots and COW cloning
-- **File sharing** via NFS, SMB, iSCSI, and NVMe-oF
-- **Virtual machines** with QEMU/KVM and browser-based VNC console
-- **Apps** for running containerized services on the appliance
-- **Alerts** with configurable rules for filesystem usage, disk health, and more
-- **Web UI** for managing everything from a browser
-- **Web terminal** with built-in shell access
-- **Atomic updates** with one-click rollback
-- **Kubernetes integration** via a CSI driver for dynamic volume provisioning
+[`api.md`](api.md) — the **JSON-RPC method reference**. Every RPC the engine accepts, with role, params, return type, and any related object schemas. Regenerated nightly from the engine's `--dump-docs` output (the engine is the source of truth).
 
-## Getting Started
+## Interactive API browser
 
-Download the latest ISO from [Releases](../../releases) and boot it on your hardware. The installer will guide you through disk selection and initial setup.
+For a searchable, browsable, *try-it-out* version of `api.md`, the same OpenAPI spec is served as a static Swagger UI at:
 
-Pre-built QCOW2 cloud images (x86_64 and aarch64) are also available in Releases for VM-based testing.
+**[nasty-api.pages.dev](https://nasty-api.pages.dev)**
 
-Default credentials: `admin` / `admin`.
+Updated on the same nightly cadence as `api.md` from this repo. On a running NASty box the engine serves the identical page at `/api/docs` (authenticated against your session, so "Try it out" actually works against your own RPC surface) and the raw spec at `/api/openapi.json`.
 
-## Kubernetes CSI Driver
+## How the docs stay in sync
 
-NASty includes a CSI driver for dynamic volume provisioning in Kubernetes clusters:
+`api.md` is *generated*, not hand-written. The regen workflow:
 
-- [nasty-csi](https://github.com/nasty-project/nasty-csi) -- CSI driver
-- [nasty-chart](https://github.com/nasty-project/nasty-chart) -- Helm chart
-- [nasty-go](https://github.com/nasty-project/nasty-go) -- Go client library
-- [nasty-plugin](https://github.com/nasty-project/nasty-plugin) -- kubectl plugin (`kubectl nasty`)
+1. Checks out [`nasty-project/nasty`](https://github.com/nasty-project/nasty) `main`
+2. Runs `nasty-engine --dump-docs` against the workspace
+3. Copies the resulting `api.md` into this repo
+4. Commits if anything changed (commit message includes the source-repo SHA)
+5. Bundles the matching `openapi.json` + vendored Swagger UI into a static site and deploys it to `nasty-api.pages.dev`
 
-## Protocols
+Runs once a day at 04:00 UTC and on manual workflow_dispatch. So docs are at most ~24h behind `main`. See [`.github/workflows/regen-api-md.yml`](.github/workflows/regen-api-md.yml) for the implementation.
 
-| Protocol | Use Case |
-|----------|----------|
-| **NFS** | Linux/Unix file sharing, Kubernetes ReadWriteMany |
-| **SMB** | Windows/macOS file sharing |
-| **iSCSI** | Block storage for VMs and databases |
-| **NVMe-oF** | High-performance block storage over TCP |
+Spotted drift? File an issue or PR against [`nasty-project/nasty`](https://github.com/nasty-project/nasty) — the registry lives in the engine, this repo just publishes.
 
 ## License
 
