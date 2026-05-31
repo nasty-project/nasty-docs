@@ -63,6 +63,40 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [SMB Shares](#smb-shares)
 - [iSCSI Targets](#iscsi-targets)
 - [NVMe-oF Subsystems](#nvme-of-subsystems)
+- [OIDC](#oidc)
+- [WebAuthn](#webauthn)
+- [Audit](#audit)
+- [System (continued)](#system-continued)
+- [System Generations](#system-generations)
+- [System Hardware](#system-hardware)
+- [System Logs](#system-logs)
+- [System Metrics](#system-metrics)
+- [System ACME](#system-acme)
+- [System TLS](#system-tls)
+- [System NUT (UPS)](#system-nut-ups)
+- [System Passthrough](#system-passthrough)
+- [System Secure Boot](#system-secure-boot)
+- [System SSH](#system-ssh)
+- [System Tailscale](#system-tailscale)
+- [System Tuning](#system-tuning)
+- [System Firewall](#system-firewall)
+- [System Update Channel](#system-update-channel)
+- [Network (continued)](#network-continued)
+- [Protocols & Services (continued)](#protocols--services-continued)
+- [Telemetry](#telemetry)
+- [Notifications](#notifications)
+- [Firmware](#firmware)
+- [Filesystem Encryption](#filesystem-encryption)
+- [Filesystem Reconcile](#filesystem-reconcile)
+- [Filesystem Dependents](#filesystem-dependents)
+- [bcachefs Tools](#bcachefs-tools)
+- [Subvolumes (continued)](#subvolumes-continued)
+- [SMB Users](#smb-users)
+- [SMB Groups](#smb-groups)
+- [Backup](#backup)
+- [VMs](#vms)
+- [VM Disk Images](#vm-disk-images)
+- [Apps](#apps)
 
 ## Authentication
 
@@ -76,10 +110,14 @@ Return the current session's username and role.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `filesystem` | string | no | If set, token can only see subvolumes in this filesystem. |
-| `role` | `Role` | yes | Role assigned to this session. |
-| `token` | string | yes | Session or API token value. |
-| `username` | string | yes | Username of the authenticated user. |
+| `client_ip` | string | no | Client IP that created this session. Requests from other IPs are rejected. |
+| `created_at` | integer | yes | Unix timestamp when this session was created. |
+| `filesystem` | string | no | For API tokens: restricts filesystem visibility to a single filesystem. |
+| `must_change_password` | boolean | no | When true, the user must change their password before doing anything else. |
+| `owner` | string | no | For API tokens: only subvolumes with this owner are visible/manageable. |
+| `role` | `Role` | yes |  |
+| `token` | string | yes |  |
+| `username` | string | yes |  |
 
 
 ### `auth.logout`
@@ -124,7 +162,11 @@ Delete a user. Cannot delete your own account.
 
 **Role:** `admin`
 
-**Params:** `{"username": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `username` | string | yes | Login username of the account to delete. |
 
 
 ### `auth.list_users`
@@ -155,19 +197,27 @@ Create a long-lived API token. Returns the token value — shown only once.
 
 **Role:** `admin`
 
-**Params:** `{"name": string, "role": Role, "pool": string?, "expires_in_secs": integer?}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `expires_in_secs` | integer | no | Seconds until the token expires. Omit for a non-expiring token. |
+| `filesystem` | string | no | If set, the token can only see subvolumes in this filesystem. |
+| `name` | string | yes | Human-readable token name. |
+| `role` | `Role` | yes |  |
 
 **Returns:**
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `created_at` | integer | yes | Unix timestamp (seconds) when the token was created. |
+| `allowed_ips` | string[] | no | If set, token is only accepted from these IP addresses. Empty = any IP. |
+| `created_at` | integer | yes |  |
 | `expires_at` | integer | no | Unix timestamp after which the token is rejected. None = never expires. |
-| `filesystem` | string | no | Filesystem this token is scoped to, if any. |
-| `id` | string | yes | Unique token identifier. |
-| `name` | string | yes | Human-readable token name. |
-| `role` | `Role` | yes | Role assigned to this token. |
-| `token` | string | yes | The actual token value — shown only once on creation. |
+| `filesystem` | string | no | If set, token can only see/manage subvolumes in this filesystem. |
+| `id` | string | yes |  |
+| `name` | string | yes |  |
+| `role` | `Role` | yes |  |
+| `token` | string | yes | Argon2 hash of the token value. The raw token is returned only once on creation. |
 
 
 ### `auth.token.delete`
@@ -176,7 +226,11 @@ Delete an API token by ID.
 
 **Role:** `admin`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Unique token identifier. |
 
 
 ## System
@@ -418,7 +472,11 @@ Set or clear the Nix build-dir spillover path. Pass `{"path": "/fs/<pool>"}` to 
 
 **Role:** `admin`
 
-**Params:** `{"path": string | null}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `path` | string | yes | Filesystem mount path to use as the Nix sandbox spillover, or null to disable. |
 
 **Returns:**
 
@@ -670,7 +728,11 @@ Enable a protocol service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `ss
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Protocol name (nfs, smb, iscsi, nvmeof, ssh, avahi, smart). |
 
 **Returns:**
 
@@ -689,7 +751,11 @@ Disable a protocol service.
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Protocol name (nfs, smb, iscsi, nvmeof, ssh, avahi, smart). |
 
 **Returns:**
 
@@ -781,7 +847,11 @@ Delete an alert rule by ID.
 
 **Role:** `admin`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Unique rule identifier. |
 
 
 ## Block Devices
@@ -803,7 +873,11 @@ Erase all filesystem signatures from a device (wipefs). The device must not be i
 
 **Role:** `admin`
 
-**Params:** `{"path": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `path` | string | yes | Block device path (e.g. /dev/sdb). |
 
 
 ## Filesystems
@@ -825,7 +899,11 @@ Get a single filesystem by name.
 
 **Role:** `any`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -918,7 +996,11 @@ Mount a known filesystem.
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -941,7 +1023,11 @@ Unmount a filesystem.
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 
 ### `fs.options.update`
@@ -999,7 +1085,11 @@ Return detailed bcachefs `fs usage` breakdown.
 
 **Role:** `any`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1018,7 +1108,11 @@ Start a scrub on a mounted filesystem.
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 
 ### `fs.scrub.status`
@@ -1027,7 +1121,11 @@ Return current scrub status.
 
 **Role:** `any`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1043,7 +1141,11 @@ Return bcachefs background work (reconcile) status.
 
 **Role:** `any`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1059,7 +1161,11 @@ Return raw `bcachefs fs usage` output for a filesystem.
 
 **Role:** `any`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1078,7 +1184,11 @@ Report TPM2 host capability and per-filesystem bind state. `tpm_available` refle
 
 **Role:** `any`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1094,7 +1204,11 @@ Seal the filesystem's stored encryption key with the host TPM2 (PCR-7 bound). Wr
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1110,7 +1224,11 @@ Remove the TPM2-sealed copy of the encryption key. The plaintext `.key` is unaff
 
 **Role:** `admin`
 
-**Params:** `{"name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1314,7 +1432,11 @@ List subvolumes in a filesystem.
 
 **Role:** `any`
 
-**Params:** `{"pool": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1338,7 +1460,12 @@ Get a single subvolume.
 
 **Role:** `any`
 
-**Params:** `{"pool": string, "name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+| `name` | string | yes | Subvolume name. |
 
 **Returns:**
 
@@ -1445,7 +1572,12 @@ Attach the loop device for a block subvolume (mounts `vol.img` via losetup).
 
 **Role:** `operator`
 
-**Params:** `{"pool": string, "name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+| `name` | string | yes | Subvolume name. |
 
 **Returns:**
 
@@ -1484,7 +1616,12 @@ Detach the loop device for a block subvolume.
 
 **Role:** `operator`
 
-**Params:** `{"pool": string, "name": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+| `name` | string | yes | Subvolume name. |
 
 **Returns:**
 
@@ -1679,7 +1816,11 @@ List snapshots for all subvolumes in a filesystem.
 
 **Role:** `any`
 
-**Params:** `{"pool": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
 
 **Returns:**
 
@@ -1794,7 +1935,11 @@ Get an NFS share by ID.
 
 **Role:** `any`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Unique share identifier. |
 
 **Returns:**
 
@@ -1865,7 +2010,11 @@ Delete an NFS share.
 
 **Role:** `admin`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes |  |
 
 
 ## SMB Shares
@@ -1887,7 +2036,11 @@ Get an SMB share by ID.
 
 **Role:** `any`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Unique share identifier. |
 
 **Returns:**
 
@@ -1983,7 +2136,11 @@ Delete an SMB share.
 
 **Role:** `admin`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes |  |
 
 
 ## iSCSI Targets
@@ -2005,7 +2162,11 @@ Get an iSCSI target by ID.
 
 **Role:** `any`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Unique share identifier. |
 
 **Returns:**
 
@@ -2057,7 +2218,11 @@ Delete an iSCSI target.
 
 **Role:** `admin`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | ID of the iSCSI target to delete. |
 
 
 ### `share.iscsi.add_lun`
@@ -2094,7 +2259,12 @@ Remove a LUN from an iSCSI target.
 
 **Role:** `admin`
 
-**Params:** `{"target_id": string, "lun_id": integer}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `lun_id` | integer | yes | LUN ID to remove. |
+| `target_id` | string | yes | ID of the target from which to remove the LUN. |
 
 **Returns:**
 
@@ -2143,7 +2313,12 @@ Remove an iSCSI initiator ACL.
 
 **Role:** `admin`
 
-**Params:** `{"target_id": string, "initiator_iqn": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `initiator_iqn` | string | yes | Initiator IQN to disallow. |
+| `target_id` | string | yes | ID of the target from which to remove the ACL. |
 
 **Returns:**
 
@@ -2177,7 +2352,11 @@ Get an NVMe-oF subsystem by ID.
 
 **Role:** `any`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Unique share identifier. |
 
 **Returns:**
 
@@ -2230,7 +2409,11 @@ Delete an NVMe-oF subsystem.
 
 **Role:** `admin`
 
-**Params:** `{"id": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | ID of the NVMe-oF subsystem to delete. |
 
 
 ### `share.nvmeof.add_namespace`
@@ -2265,7 +2448,12 @@ Remove a namespace from a subsystem.
 
 **Role:** `admin`
 
-**Params:** `{"subsystem_id": string, "nsid": integer}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `nsid` | integer | yes | Namespace ID to remove. |
+| `subsystem_id` | string | yes | ID of the subsystem from which to remove the namespace. |
 
 **Returns:**
 
@@ -2315,7 +2503,12 @@ Remove a transport port from a subsystem.
 
 **Role:** `admin`
 
-**Params:** `{"subsystem_id": string, "port_id": integer}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `port_id` | integer | yes | Port ID to remove. |
+| `subsystem_id` | string | yes | ID of the subsystem from which to remove the port. |
 
 **Returns:**
 
@@ -2362,7 +2555,12 @@ Disallow a host NQN from a subsystem.
 
 **Role:** `admin`
 
-**Params:** `{"subsystem_id": string, "nqn": string}`
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `host_nqn` | string | yes | NQN of the host to disallow. |
+| `subsystem_id` | string | yes | ID of the subsystem from which to revoke access. |
 
 **Returns:**
 
@@ -2375,6 +2573,3098 @@ Disallow a host NQN from a subsystem.
 | `namespaces` | `Namespace`[] | yes | Block device namespaces exposed by this subsystem. |
 | `nqn` | string | yes | NVMe Qualified Name (e.g. `nqn.2137-04.storage.nasty:tank-vol`). |
 | `ports` | `Port`[] | yes | Transport ports this subsystem is reachable on. |
+
+
+## OIDC
+
+### `auth.oidc.config_status`
+
+Return the current OIDC settings with `client_secret` redacted to `<set>`/`<unset>` so the secret value never leaves the engine.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
+| `client_id` | string | no | OAuth client_id registered with the IdP. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
+| `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
+| `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
+| `issuer_url` | string | no | IdP issuer URL (used for OIDC discovery, e.g. "https://auth.example.com"). |
+| `redirect_uri` | string | no | Absolute redirect URI registered with the IdP (e.g. "https://nasty.local/api/auth/oidc/callback"). |
+| `role_mappings` | `OidcRoleMapping`[] | no | Group → role mappings. Evaluated in order; first match wins. |
+| `scopes` | string[] | no | OAuth scopes to request. Defaults to ["openid","profile","email","groups"]. |
+
+
+### `auth.oidc.test`
+
+Dry run that maps a sample claims object through the current OIDC role-mapping policy without contacting the IdP.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `claims` | object | yes | Sample IdP claims to feed through the role-mapping policy. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `role` | string | yes | Matched role name, or null when no mapping fires. |
+
+
+### `auth.oidc.update_config`
+
+Update the OIDC settings (preserves the stored client_secret if the caller sends the `<unchanged>` placeholder), rebuild the live OIDC client, and audit-log the change.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
+| `client_id` | string | no | OAuth client_id registered with the IdP. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
+| `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
+| `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
+| `issuer_url` | string | no | IdP issuer URL (used for OIDC discovery, e.g. "https://auth.example.com"). |
+| `redirect_uri` | string | no | Absolute redirect URI registered with the IdP (e.g. "https://nasty.local/api/auth/oidc/callback"). |
+| `role_mappings` | `OidcRoleMapping`[] | no | Group → role mappings. Evaluated in order; first match wins. |
+| `scopes` | string[] | no | OAuth scopes to request. Defaults to ["openid","profile","email","groups"]. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
+| `client_id` | string | no | OAuth client_id registered with the IdP. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
+| `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
+| `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
+| `issuer_url` | string | no | IdP issuer URL (used for OIDC discovery, e.g. "https://auth.example.com"). |
+| `redirect_uri` | string | no | Absolute redirect URI registered with the IdP (e.g. "https://nasty.local/api/auth/oidc/callback"). |
+| `role_mappings` | `OidcRoleMapping`[] | no | Group → role mappings. Evaluated in order; first match wins. |
+| `scopes` | string[] | no | OAuth scopes to request. Defaults to ["openid","profile","email","groups"]. |
+
+
+## WebAuthn
+
+### `auth.webauthn.config`
+
+Return the engine-pinned WebAuthn RP ID so the WebUI can pre-check the operator's current origin before triggering credential creation.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `rp_id` | string | yes | RP ID baked into this engine instance. |
+
+
+### `auth.webauthn.list`
+
+List the calling user's registered WebAuthn credentials (label, created_at, base64url credential_id) — no public-key material.
+
+**Role:** `any`
+
+**Returns:**
+
+`object[]`
+
+
+### `auth.webauthn.register.start`
+
+Begin WebAuthn registration: issue a server-side challenge and return creation_options for `navigator.credentials.create` plus a registration_id to round-trip to `register.finish`; rejects when the user has no non-WebAuthn fallback factor.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `label` | string | yes | Operator-facing label for the new credential ("YubiKey", "Phone", …). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `creation_options` | object | yes | Browser-facing `PublicKeyCredentialCreationOptions`; pass straight to `navigator.credentials.create`. |
+| `registration_id` | string | yes | Opaque token to pass back to register.finish. |
+
+
+### `auth.webauthn.register.finish`
+
+Complete WebAuthn registration: validate the browser's `navigator.credentials.create` response against the pending challenge and persist the new passkey under the caller's user record.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `registration_id` | string | yes | Opaque token from register.start. |
+| `response` | object | yes | Browser's `RegisterPublicKeyCredential` response object. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | integer | yes |  |
+| `credential_id` | string | yes |  |
+| `label` | string | yes |  |
+
+
+### `auth.webauthn.delete`
+
+Delete one of the calling user's own registered WebAuthn credentials, identified by its base64url credential_id.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `credential_id` | string | yes | Base64url credential ID to remove. |
+
+
+### `auth.webauthn.reset_for_user`
+
+Admin recovery: clear every WebAuthn credential registered to the target user (used when they've lost all authenticators); audit-logged.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `username` | string | yes | Login username whose credentials should be cleared. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `removed` | integer | yes | Number of credentials cleared (0 is a successful no-op). |
+
+
+## Audit
+
+### `audit.list`
+
+Return the most recent audit-log entries (default 200, capped by `limit`), parsed line-by-line in reverse chronological order. Entry shape depends on the action being audited.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `limit` | integer | no | Maximum number of entries to return. |
+
+**Returns:**
+
+`object[]`
+
+
+## System (continued)
+
+### `system.reboot_required`
+
+Return true if the booted kernel/modules differ from the current system (a reboot is needed).
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+## System Generations
+
+### `system.generations.list`
+
+List all NixOS generations with metadata (date, kernel, NASty version, current/booted flags, user-assigned label).
+
+**Role:** `any`
+
+**Returns:**
+
+``Generation`[]`
+
+
+### `system.generations.label`
+
+Set or clear a user-assigned label (e.g. "known good") on a NixOS generation.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `generation` | integer | yes | Generation number to label. |
+| `label` | string | no | New label, or null to clear. |
+
+
+### `system.generations.delete`
+
+Delete a specific NixOS generation from the boot menu.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `generation` | integer | yes | Generation number to delete. |
+
+
+### `system.generations.switch`
+
+Switch the active system to a specific NixOS generation (rebuild-switch into it). Returns immediately while the switch runs in the background.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `generation` | integer | yes | Generation number to switch to. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `status` | string | yes |  |
+
+
+## System Hardware
+
+### `system.hardware.iommu`
+
+Return IOMMU groups with their PCI device members (for passthrough planning).
+
+**Role:** `any`
+
+**Returns:**
+
+``IommuGroup`[]`
+
+
+### `system.hardware.summary`
+
+Return a host hardware summary (DMI system/BIOS, CPU, memory DIMMs, USB devices, TPM, Secure Boot state).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bios` | `DmiBios` \| null | no |  |
+| `cpu` | `CpuSummary` \| null | no |  |
+| `memory` | `MemorySummary` | yes |  |
+| `secure_boot` | `SecureBootStatus` | yes | Secure Boot state as reported by `sbctl status --json`. Always
+present — failure modes (BIOS boot, sbctl missing, sbctl
+errored) collapse into a struct with `enabled = None` and a
+human-readable `note` rather than an absent field. The WebUI
+renders one of: enabled / disabled / unknown. |
+| `system` | `DmiSystem` \| null | no |  |
+| `tpm` | `TpmInfo` \| null | no | TPM chip presence + usability for the encryption-key sealing
+flows that #102 is building toward. `None` when no TPM device
+is enumerated by the kernel at all (no chip, disabled in
+firmware, missing driver). |
+| `usb` | `UsbDevice`[] | yes |  |
+
+
+## System Logs
+
+### `system.logs`
+
+Return the tail of a systemd unit's journal.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `grep` | string | no | Optional substring filter. |
+| `lines` | integer | no | Number of lines from the tail. |
+| `unit` | string | no | Systemd unit to read. |
+
+**Returns:**
+
+`object`
+
+
+### `system.logs.units`
+
+Return the list of well-known systemd units that exist on this host (for the log-viewer unit picker).
+
+**Role:** `any`
+
+**Returns:**
+
+`string[]`
+
+
+### `system.log.level`
+
+Return the engine's currently-active tracing/log filter string.
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+### `system.log.set_level`
+
+Hot-reload the engine's tracing log filter without restart.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filter` | string | yes | New `EnvFilter` directive (e.g. `nasty_engine=trace,nasty_storage=debug`). |
+
+
+## System Metrics
+
+### `system.metrics.history`
+
+Proxy historical metrics samples (CPU/net/disk/etc.) from the nasty-metrics sidecar.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `kind` | string | no | Resource kind (cpu, net, disk, ...). |
+| `name` | string | no | Resource name (interface, device, ...). |
+| `offset` | integer | no | Seconds offset from now (negative = past). |
+| `range` | string | no | Lookback window (e.g. `1h`, `24h`). |
+
+**Returns:**
+
+`object[]`
+
+
+### `system.metrics.prometheus`
+
+Proxy the raw Prometheus-formatted scrape from the nasty-metrics sidecar.
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+## System ACME
+
+### `system.acme.status`
+
+Return the current ACME certificate issuance status (state, message, domain, issuer, expiry).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `domain` | string | no | Domain the cert is for |
+| `expires` | string | no | When the cert expires, if known |
+| `issued` | string | no | When the cert was issued, if known |
+| `issuer` | string | no | Certificate issuer (e.g. "Let's Encrypt") |
+| `last_attempt` | string | no | When the last attempt was made |
+| `message` | string | yes | Human-readable message (error details, progress info) |
+| `state` | string | yes | "idle", "running", "success", "error" |
+
+
+### `system.acme.reset`
+
+Reset the in-memory ACME certificate issuance status back to "idle".
+
+**Role:** `admin`
+
+
+### `system.acme.retry`
+
+Re-apply Caddy's TLS automation policy from disk to retry stalled ACME issuance.
+
+**Role:** `admin`
+
+
+## System TLS
+
+### `system.tls.host_statuses`
+
+Return per-host TLS automation status for every hostname Caddy is managing (active/issuing/failed/pending with last log message).
+
+**Role:** `any`
+
+**Returns:**
+
+``HostTlsStatus`[]`
+
+
+### `system.tls.local_ca_root`
+
+Return Caddy's internal-CA root certificate (PEM) so operators can import it into their trust store. Errors with a "try again" message when Caddy hasn't bootstrapped yet.
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+## System NUT (UPS)
+
+### `system.nut.config.get`
+
+Return the persisted NUT (UPS) configuration.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `description` | string | no | Human-readable description.  Local mode only. |
+| `driver` | string | no | NUT driver name (e.g. `usbhid-ups`, `blazer_usb`, `snmp-ups`).
+Local mode only. |
+| `mode` | `NutMode` | no | Whether the UPS is attached locally or monitored over the network. |
+| `port` | string | no | Device port. `auto` for USB auto-detection, or a path like `/dev/ttyS0`.
+Local mode only. |
+| `remote_host` | string | no | Hostname or IP of the remote NUT server.  Remote mode only. |
+| `remote_password` | string | no | Password configured in the remote upsd.users.  Remote mode only. |
+| `remote_port` | integer | no | Port the remote NUT server listens on (default 3493).  Remote mode only. |
+| `remote_username` | string | no | Username configured in the remote upsd.users.  Remote mode only. |
+| `shutdown_command` | string | no | Command to execute for system shutdown. |
+| `shutdown_on_battery_percent` | integer | no | Initiate shutdown when battery drops below this percentage. |
+| `shutdown_on_battery_seconds` | integer | no | Initiate shutdown after this many seconds on battery power. |
+| `ups_name` | string | no | UPS identifier used by upsc/upsd (e.g. `ups`). |
+
+
+### `system.nut.config.update`
+
+Apply a partial update to the NUT configuration and persist it.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `description` | string | no |  |
+| `driver` | string | no |  |
+| `mode` | `NutMode` \| null | no |  |
+| `port` | string | no |  |
+| `remote_host` | string | no |  |
+| `remote_password` | string | no |  |
+| `remote_port` | integer | no |  |
+| `remote_username` | string | no |  |
+| `shutdown_command` | string | no |  |
+| `shutdown_on_battery_percent` | integer | no |  |
+| `shutdown_on_battery_seconds` | integer | no |  |
+| `ups_name` | string | no |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `description` | string | no | Human-readable description.  Local mode only. |
+| `driver` | string | no | NUT driver name (e.g. `usbhid-ups`, `blazer_usb`, `snmp-ups`).
+Local mode only. |
+| `mode` | `NutMode` | no | Whether the UPS is attached locally or monitored over the network. |
+| `port` | string | no | Device port. `auto` for USB auto-detection, or a path like `/dev/ttyS0`.
+Local mode only. |
+| `remote_host` | string | no | Hostname or IP of the remote NUT server.  Remote mode only. |
+| `remote_password` | string | no | Password configured in the remote upsd.users.  Remote mode only. |
+| `remote_port` | integer | no | Port the remote NUT server listens on (default 3493).  Remote mode only. |
+| `remote_username` | string | no | Username configured in the remote upsd.users.  Remote mode only. |
+| `shutdown_command` | string | no | Command to execute for system shutdown. |
+| `shutdown_on_battery_percent` | integer | no | Initiate shutdown when battery drops below this percentage. |
+| `shutdown_on_battery_seconds` | integer | no | Initiate shutdown after this many seconds on battery power. |
+| `ups_name` | string | no | UPS identifier used by upsc/upsd (e.g. `ups`). |
+
+
+### `system.nut.status`
+
+Return the live UPS status (charge, runtime, voltage, load, model) as reported by `upsc`.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `available` | boolean | yes | Whether the UPS service is running and reachable. |
+| `battery_charge` | number | no | Battery charge percentage. |
+| `battery_runtime` | integer | no | Estimated battery runtime in seconds. |
+| `input_voltage` | number | no | Input voltage (from mains). |
+| `output_voltage` | number | no | Output voltage (to load). |
+| `raw` | object | yes | All raw key-value pairs from upsc. |
+| `status` | string | yes | UPS status string (e.g. `OL` = online, `OB` = on battery, `LB` = low battery). |
+| `ups_load` | number | no | UPS load percentage. |
+| `ups_model` | string | no | UPS model/product name. |
+| `ups_serial` | string | no | UPS serial number. |
+
+
+## System Passthrough
+
+### `system.passthrough.get`
+
+Return the persisted PCI vfio-pci passthrough configuration (vendor:device pairs claimed at boot).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ids` | `DeviceId`[] | yes | (vendor, device) pairs to bind to vfio-pci at boot. Order is
+not significant — we sort+dedupe on save and write. |
+
+
+### `system.passthrough.update`
+
+Validate, persist, and regenerate the passthrough Nix snippet from a new vendor:device list (reboot required to apply).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ids` | `DeviceId`[] | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ids` | `DeviceId`[] | yes | (vendor, device) pairs to bind to vfio-pci at boot. Order is
+not significant — we sort+dedupe on save and write. |
+
+
+## System Secure Boot
+
+### `system.secure_boot.readiness`
+
+Compute the Secure Boot readiness checklist (UEFI/TPM/ESP space/lanzaboote-in-flake/sbctl keys) for the Hardware page.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `blocker` | string | no | Human-readable one-line summary of why `ready == false`. The
+WebUI surfaces this next to a disabled "Enable Secure Boot"
+button. |
+| `esp_free_bytes` | integer | no | Free bytes on `/boot` as reported by `statvfs`. `None` when
+`/boot` isn't a separate mount or `statvfs` fails (rare). |
+| `esp_required_bytes` | integer | yes | Threshold the WebUI compares `esp_free_bytes` against. Echoed
+in the response so the UI doesn't have to hard-code the same
+number on its side. |
+| `ready` | boolean | yes | Top-level answer: can the operator flip
+`services.nasty.secureBoot.enable = true` right now and
+have it succeed end-to-end? `false` while any blocker
+remains. |
+| `sb_currently_off` | boolean | no | `Some(true)` when SB is currently off — i.e. ready to enable.
+`Some(false)` when SB is already on (this readiness probe
+doesn't apply to that path). `None` on BIOS boots / when
+bootctl can't read the state. |
+| `sb_supported_by_firmware` | boolean | no | `Some(true)` when bootctl reports SB support. `Some(false)`
+when bootctl reports `disabled (unsupported)` — the firmware
+itself lacks SB. `None` when we couldn't determine (BIOS
+boot, bootctl missing). |
+| `sbctl_keys_already_generated` | boolean | yes | True iff `/var/lib/sbctl/keys/db/db.key` exists. Purely
+informational — when lanzaboote turns on with
+`autoGenerateKeys.enable = true`, the keys get generated on
+the first SB-enabled boot, so `false` here is the expected
+state pre-enrollment. The WebUI surfaces this so an operator
+who manually pre-generated keys sees that NASty noticed. |
+| `tpm2_available` | boolean | yes | True iff `/dev/tpmrm0` is present — TPM2 sealing of bcachefs
+keys requires it. Without TPM the SB opt-in still works, but
+the bcachefs-binding part of NASty's TPM story has nothing
+to seal to, so we treat this as a hard requirement for the
+ceremony. |
+| `uefi_boot` | boolean | yes | True iff `/sys/firmware/efi` exists — i.e. the kernel sees a
+UEFI boot environment. BIOS / legacy boots return false and
+every downstream check collapses to `None`. |
+| `wrapper_has_lanzaboote_input` | boolean | no | `Some(true)` when `/etc/nixos/flake.nix` declares
+`lanzaboote.url = ...` at top level. `Some(false)` on pre-
+this-PR wrappers (operator needs to upgrade once so the
+engine re-renders the template). `None` when we couldn't
+read /etc/nixos/flake.nix (operator running an unusual
+install or read failed). |
+
+
+### `system.secure_boot.enrollment.status`
+
+Return the combined persistent enrollment state plus the live `nasty-rebuild` unit snapshot.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `initiated_by` | string | no | Username that initiated the most recent ceremony attempt.
+`None` only on a freshly-installed box that's never started
+enrollment. |
+| `phase` | `EnrollmentPhase` | yes |  |
+| `rebuild` | `RebuildSnapshot` | yes |  |
+| `rebuild_triggered_at` | integer | no | Unix seconds when the most recent wizard-driven
+`nasty-rebuild` was triggered. `None` until the operator
+clicks Rebuild from the wizard. Cleared back to `None` on
+every `begin()` / `abort()` so each fresh ceremony starts
+without a stale marker. The Abort copy reads this to
+decide whether "the overlay was never applied" or "you
+need to rebuild once more to revert" is accurate. |
+
+
+### `system.secure_boot.enrollment.begin`
+
+Start the Secure Boot enrollment ceremony by writing the lanzaboote Nix overlay and locking inputs.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `initiated_by` | string | no | Username that initiated the most recent ceremony attempt.
+`None` only on a freshly-installed box that's never started
+enrollment. |
+| `phase` | `EnrollmentPhase` | yes |  |
+| `rebuild_triggered_at` | integer | no | Unix seconds when the most recent wizard-driven
+`nasty-rebuild` was triggered. `None` until the operator
+clicks Rebuild from the wizard. Cleared back to `None` on
+every `begin()` / `abort()` so each fresh ceremony starts
+without a stale marker. The Abort copy reads this to
+decide whether "the overlay was never applied" or "you
+need to rebuild once more to revert" is accurate. |
+
+
+### `system.secure_boot.enrollment.rebuild`
+
+Trigger `nasty-rebuild` via systemd-run to apply the enrollment overlay the wizard wrote.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `triggered` | boolean | yes |  |
+
+
+### `system.secure_boot.enrollment.complete`
+
+Mark the Secure Boot enrollment ceremony done (only valid from PostEnrollment phase).
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `initiated_by` | string | no | Username that initiated the most recent ceremony attempt.
+`None` only on a freshly-installed box that's never started
+enrollment. |
+| `phase` | `EnrollmentPhase` | yes |  |
+| `rebuild_triggered_at` | integer | no | Unix seconds when the most recent wizard-driven
+`nasty-rebuild` was triggered. `None` until the operator
+clicks Rebuild from the wizard. Cleared back to `None` on
+every `begin()` / `abort()` so each fresh ceremony starts
+without a stale marker. The Abort copy reads this to
+decide whether "the overlay was never applied" or "you
+need to rebuild once more to revert" is accurate. |
+
+
+### `system.secure_boot.enrollment.abort`
+
+Abort an in-progress Secure Boot enrollment by removing the lanzaboote overlay and lock entries.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `reason` | string | no | Optional operator-supplied reason recorded in audit log. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `initiated_by` | string | no | Username that initiated the most recent ceremony attempt.
+`None` only on a freshly-installed box that's never started
+enrollment. |
+| `phase` | `EnrollmentPhase` | yes |  |
+| `rebuild_triggered_at` | integer | no | Unix seconds when the most recent wizard-driven
+`nasty-rebuild` was triggered. `None` until the operator
+clicks Rebuild from the wizard. Cleared back to `None` on
+every `begin()` / `abort()` so each fresh ceremony starts
+without a stale marker. The Abort copy reads this to
+decide whether "the overlay was never applied" or "you
+need to rebuild once more to revert" is accurate. |
+
+
+## System SSH
+
+### `system.ssh.status`
+
+Return whether sshd password auth is enabled and the list of authorized SSH keys.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `keys` | string[] | yes |  |
+| `password_auth` | boolean | yes |  |
+
+
+### `system.ssh.add_key`
+
+Append an SSH public key to `/root/.ssh/authorized_keys`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `key` | string | yes | Full public key line (must start with `ssh-` or `ecdsa-`). |
+
+
+### `system.ssh.remove_key`
+
+Remove a matching SSH public key line from `/root/.ssh/authorized_keys`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `key` | string | yes | Full public key line to remove. |
+
+
+### `system.ssh.set_password_auth`
+
+Toggle sshd `PasswordAuthentication` via the engine-managed override file and reload sshd. Refuses to disable when no SSH keys are present.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | no | True to enable password auth, false to disable. |
+
+
+## System Tailscale
+
+### `system.tailscale.get`
+
+Return the persisted Tailscale config plus the live daemon/connection state (IP, hostname, version).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `connected` | boolean | yes | Whether Tailscale is connected to the network. |
+| `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
+| `enabled` | boolean | yes | Persisted configuration. |
+| `has_auth_key` | boolean | yes | Whether an auth key is configured. |
+| `hostname` | string | no | Tailscale hostname. |
+| `ip` | string | no | Tailscale IPv4 address (100.x.y.z). |
+| `version` | string | no | Tailscale client version. |
+
+
+### `system.tailscale.connect`
+
+Start the Tailscale daemon and authenticate with the supplied auth key (falling back to the stored key when empty); also re-sync NVMe-oF ports for the new Tailscale IP.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `auth_key` | string | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `connected` | boolean | yes | Whether Tailscale is connected to the network. |
+| `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
+| `enabled` | boolean | yes | Persisted configuration. |
+| `has_auth_key` | boolean | yes | Whether an auth key is configured. |
+| `hostname` | string | no | Tailscale hostname. |
+| `ip` | string | no | Tailscale IPv4 address (100.x.y.z). |
+| `version` | string | no | Tailscale client version. |
+
+
+### `system.tailscale.disconnect`
+
+Stop the Tailscale daemon, persist `enabled=false`, and clean up NVMe-oF ports on the 100.x Tailscale IP.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `connected` | boolean | yes | Whether Tailscale is connected to the network. |
+| `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
+| `enabled` | boolean | yes | Persisted configuration. |
+| `has_auth_key` | boolean | yes | Whether an auth key is configured. |
+| `hostname` | string | no | Tailscale hostname. |
+| `ip` | string | no | Tailscale IPv4 address (100.x.y.z). |
+| `version` | string | no | Tailscale client version. |
+
+
+## System Tuning
+
+### `system.tuning.get`
+
+Return the persisted system-wide NAS performance tuning configuration (NFS/SMB/iSCSI/VM-writeback knobs).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `iscsi_default_cmdsn_depth` | integer | no | Default command queue depth per iSCSI session. |
+| `iscsi_login_timeout` | integer | no | iSCSI login timeout in seconds. |
+| `nfs_grace_time` | integer | no | NFSv4 grace period in seconds after server restart. Clients can reclaim locks. |
+| `nfs_lease_time` | integer | no | NFSv4 lease time in seconds. Clients must renew state within this window. |
+| `nfs_threads` | integer | no | Number of NFS server (nfsd) kernel threads. |
+| `smb_deadtime` | integer | no | Minutes before idle SMB clients are disconnected (0 = never). |
+| `smb_max_connections` | integer | no | Maximum simultaneous SMB connections (0 = unlimited). |
+| `smb_socket_options` | string | no | Samba socket options for TCP tuning (e.g. `SO_RCVBUF=131072 SO_SNDBUF=131072`). |
+| `vm_dirty_background_ratio` | integer | no | Dirty page percentage at which background writeback starts. |
+| `vm_dirty_expire_centisecs` | integer | no | Centiseconds before dirty pages are old enough to be written out. |
+| `vm_dirty_ratio` | integer | no | Maximum percentage of memory that can be dirty before synchronous writeback kicks in. |
+| `vm_dirty_writeback_centisecs` | integer | no | Centiseconds between writeback daemon wakeups. |
+
+
+### `system.tuning.update`
+
+Apply a partial update to the tuning configuration, persist it, and reapply the affected sysctl/Samba/etc. settings.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `iscsi_default_cmdsn_depth` | integer | no |  |
+| `iscsi_login_timeout` | integer | no |  |
+| `nfs_grace_time` | integer | no |  |
+| `nfs_lease_time` | integer | no |  |
+| `nfs_threads` | integer | no |  |
+| `smb_deadtime` | integer | no |  |
+| `smb_max_connections` | integer | no |  |
+| `smb_socket_options` | string | no |  |
+| `vm_dirty_background_ratio` | integer | no |  |
+| `vm_dirty_expire_centisecs` | integer | no |  |
+| `vm_dirty_ratio` | integer | no |  |
+| `vm_dirty_writeback_centisecs` | integer | no |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `iscsi_default_cmdsn_depth` | integer | no | Default command queue depth per iSCSI session. |
+| `iscsi_login_timeout` | integer | no | iSCSI login timeout in seconds. |
+| `nfs_grace_time` | integer | no | NFSv4 grace period in seconds after server restart. Clients can reclaim locks. |
+| `nfs_lease_time` | integer | no | NFSv4 lease time in seconds. Clients must renew state within this window. |
+| `nfs_threads` | integer | no | Number of NFS server (nfsd) kernel threads. |
+| `smb_deadtime` | integer | no | Minutes before idle SMB clients are disconnected (0 = never). |
+| `smb_max_connections` | integer | no | Maximum simultaneous SMB connections (0 = unlimited). |
+| `smb_socket_options` | string | no | Samba socket options for TCP tuning (e.g. `SO_RCVBUF=131072 SO_SNDBUF=131072`). |
+| `vm_dirty_background_ratio` | integer | no | Dirty page percentage at which background writeback starts. |
+| `vm_dirty_expire_centisecs` | integer | no | Centiseconds before dirty pages are old enough to be written out. |
+| `vm_dirty_ratio` | integer | no | Maximum percentage of memory that can be dirty before synchronous writeback kicks in. |
+| `vm_dirty_writeback_centisecs` | integer | no | Centiseconds between writeback daemon wakeups. |
+
+
+## System Firewall
+
+### `system.firewall.status`
+
+Return the current firewall rules and per-service source/interface restrictions.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `active` | boolean | yes |  |
+| `interface_restrictions` | object | yes | Per-service interface restrictions. |
+| `restrictions` | object | yes | Per-service source IP restrictions. |
+| `rules` | `FirewallRule`[] | yes |  |
+
+
+### `system.firewall.restrict`
+
+Set per-service source-IP/interface restrictions and rebuild the nftables rules.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `interfaces` | string[] | no | Allowed interfaces. Omit to clear. |
+| `service` | string | yes | Service name (nfs, smb, iscsi, …). |
+| `sources` | string[] | no | Allowed source CIDRs. Omit to clear. |
+
+
+## System Update Channel
+
+### `system.update.channel.get`
+
+Return the currently-selected release channel (Mild/Spicy/Nasty).
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+### `system.update.channel.set`
+
+Persist the selected release channel.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `channel` | string | yes | Channel name (`mild`, `spicy`, or `nasty`). |
+
+**Returns:**
+
+`object`
+
+
+## Network (continued)
+
+### `system.network.pending`
+
+Return the list of network-update transactions still awaiting confirm-or-rollback. (Admin-only by current role-gate even though it's a read.)
+
+**Role:** `admin`
+
+**Returns:**
+
+``NetworkPendingTxn`[]`
+
+
+### `system.network.confirm`
+
+Confirm a pending network-change rollback transaction so the new config sticks.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `txn_id` | string | yes |  |
+
+
+### `system.network.nm_preview`
+
+Compute the diff between desired NetworkManager profiles and NM's current state without applying.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `summary` | `NmDiffSummary` | yes | Counts for at-a-glance display in the WebUI. |
+| `to_add` | string[] | yes | Connection IDs present in the desired set but not currently in
+NM — `apply_profiles` calls `Settings.AddConnection` for these. |
+| `to_delete` | string[] | yes | NASty-managed IDs in NM but not in the desired set — user must
+have removed the link.  `apply_profiles` calls `Connection.Delete`. |
+| `to_update` | `NmDiffUpdate`[] | yes | IDs present in both, but with different settings — `apply_profiles`
+calls `Connection.Update`. |
+
+
+### `system.network.nm_apply`
+
+Apply the desired NetworkManager profile set (add/update/delete + activate) to the live system.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `activated` | string[] | yes | Connection IDs successfully activated this apply. Subset of
+`added ∪ updated ∪ unchanged` — we only activate enabled
+connections that have a matching NM-managed device. |
+| `added` | string[] | yes |  |
+| `deleted` | string[] | yes |  |
+| `errors` | object | yes | Per-id error map. Empty on full success. The apply is best-
+effort — one failed connection doesn't abort the rest. |
+| `unchanged` | string[] | yes |  |
+| `updated` | string[] | yes |  |
+
+
+## Protocols & Services (continued)
+
+### `service.base_names.get`
+
+Return the configured iSCSI IQN prefix and NVMe-oF NQN prefix used as the base for newly created targets/subsystems (built-in defaults if no override file exists).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `iqn_prefix` | string | yes |  |
+| `nqn_prefix` | string | yes |  |
+
+
+### `service.base_names.update`
+
+Persist user-supplied iSCSI IQN and/or NVMe-oF NQN base name prefixes so future target/subsystem creations use them.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `iqn_prefix` | string | no |  |
+| `nqn_prefix` | string | no |  |
+
+
+### `service.rest_server.config`
+
+Return the configured filesystem path used by the embedded `nasty-rest-server` (restic REST API) backup endpoint.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `path` | string | yes |  |
+
+
+### `service.rest_server.configure`
+
+Set the rest-server storage path, auto-creating a subvolume under `/fs/<name>/...` if needed, persisting the path, and restarting `nasty-rest-server` to pick up the change.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `path` | string | yes | Absolute filesystem path for restic REST API storage. |
+
+
+## Telemetry
+
+### `telemetry.send`
+
+Trigger an immediate anonymous telemetry report (drive/VM/app counts, version, arch) to the NASty telemetry endpoint. No-op when telemetry is disabled in settings.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `sent` | boolean | yes | True if the report was transmitted; false when telemetry is disabled. |
+
+
+## Notifications
+
+### `notifications.config.get`
+
+Return the persisted notification-channels configuration (SMTP / Telegram / Webhook / ntfy / Signal).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `channels` | `ChannelConfig`[] | yes |  |
+
+
+### `notifications.config.update`
+
+Replace the on-disk notifications config with the supplied one. File is chmod 0600 because it carries SMTP passwords and bot tokens.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `channels` | `ChannelConfig`[] | yes |  |
+
+
+### `notifications.test`
+
+Send a one-shot test message ("NASty Test") through the supplied channel configuration without persisting it.
+
+**Role:** `admin`
+
+**Params:**
+
+`object`
+
+**Returns:**
+
+`object`
+
+
+## Firmware
+
+### `firmware.available`
+
+Report whether firmware management is usable on this host (false inside VMs as detected by `systemd-detect-virt`, true on bare metal).
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+### `firmware.devices`
+
+List every device known to `fwupdmgr` with its name, vendor, device ID, and currently installed firmware version (no update check).
+
+**Role:** `any`
+
+**Returns:**
+
+``FirmwareDevice`[]`
+
+
+### `firmware.check`
+
+Refresh LVFS metadata via `fwupdmgr refresh` then return the device list with `update_available`/`update_version`/`update_description` populated for devices with pending updates.
+
+**Role:** `any`
+
+**Returns:**
+
+``FirmwareDevice`[]`
+
+
+### `firmware.constraints`
+
+Return a snapshot of system-level blockers on applying firmware updates (today: whether Secure Boot enforcement is preventing fwupd's capsule shim per lanzaboote#591).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `sb_blocks_apply` | boolean | yes | True when the engine has detected Secure Boot is enforcing.
+The Apply UI surfaces a banner + per-row disable when set;
+`firmware.update` itself rejects the call as well. |
+| `sb_blocks_apply_reason` | string | yes | Operator-facing reason string, suitable for surfacing
+verbatim in a tooltip or banner. Empty when
+`sb_blocks_apply` is false (the WebUI hides the banner). |
+
+
+### `firmware.update`
+
+Apply the available firmware update for the named device via fwupd. Refuses the call if Secure Boot constraints block the capsule-apply path.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device_id` | string | yes | fwupd device identifier (from firmware.devices). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device_name` | string | yes |  |
+| `message` | string | yes |  |
+| `reboot_required` | boolean | yes | Whether a reboot is required to apply the update. |
+| `success` | boolean | yes |  |
+
+
+## Filesystem Encryption
+
+### `fs.lock`
+
+Lock an encrypted filesystem by unmounting it (with cascading dependent teardown) and unlinking its key from the session keyring.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `available_bytes` | integer | yes | Bytes available for writing. |
+| `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
+| `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
+| `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
+| `options` | `FilesystemOptions` | yes | Filesystem-level options read from sysfs or show-super. |
+| `total_bytes` | integer | yes | Total usable capacity in bytes. |
+| `used_bytes` | integer | yes | Bytes currently in use. |
+| `uuid` | string | yes | bcachefs filesystem UUID. |
+
+
+### `fs.unlock`
+
+Unlock an encrypted filesystem by passing the supplied passphrase to `bcachefs unlock` against its first device, loading the key into the session keyring.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+| `passphrase` | string | yes | User-supplied unlock passphrase. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `available_bytes` | integer | yes | Bytes available for writing. |
+| `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
+| `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
+| `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
+| `options` | `FilesystemOptions` | yes | Filesystem-level options read from sysfs or show-super. |
+| `total_bytes` | integer | yes | Total usable capacity in bytes. |
+| `used_bytes` | integer | yes | Bytes currently in use. |
+| `uuid` | string | yes | bcachefs filesystem UUID. |
+
+
+### `fs.key.export`
+
+Read and return the stored encryption key file contents for the named encrypted filesystem.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+`object`
+
+
+### `fs.key.delete`
+
+Delete the on-disk stored encryption key for an encrypted filesystem, switching it to passphrase-only mode.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+
+## Filesystem Reconcile
+
+### `fs.reconcile.enable`
+
+Turn on bcachefs background reconcile work on a mounted filesystem by writing `1` to its sysfs `reconcile_enabled` knob.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+
+### `fs.reconcile.disable`
+
+Turn off bcachefs background reconcile work on a mounted filesystem by writing `0` to its sysfs `reconcile_enabled` knob.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+
+## Filesystem Dependents
+
+### `fs.dependents`
+
+Return all downstream entities (subvolumes, apps, VMs, backup jobs, NFS/SMB/iSCSI/NVMe-oF shares) that reference a given filesystem, used to preview impact before destructive operations like lock.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `apps` | string[] | yes |  |
+| `backup_jobs` | string[] | yes |  |
+| `filesystem` | string | yes |  |
+| `iscsi_targets` | string[] | yes |  |
+| `mounted` | boolean | yes |  |
+| `nfs_shares` | string[] | yes |  |
+| `nvmeof_subsystems` | string[] | yes |  |
+| `smb_shares` | string[] | yes |  |
+| `subvolumes` | string[] | yes |  |
+| `vms` | string[] | yes |  |
+
+
+### `fs.locked_dependents`
+
+Return the reverse-index of currently locked encrypted filesystems mapped to their app/VM dependents (for the WebUI's "locked on FS" badges).
+
+**Role:** `any`
+
+**Returns:**
+
+``FsDependents`[]`
+
+
+## bcachefs Tools
+
+### `bcachefs.top`
+
+Capture ~2 seconds of `bcachefs fs top` output for the named filesystem via a PTY, strip ANSI/header noise, and return the last complete frame as plain text.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+`object`
+
+
+### `bcachefs.timestats`
+
+Run `bcachefs fs timestats --json --once` against the named filesystem's mount point and return the parsed JSON (latency/duration histograms for bcachefs operations).
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+`object`
+
+
+## Subvolumes (continued)
+
+### `subvolume.children`
+
+List nested child subvolume names found beneath the named parent subvolume on the given filesystem.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+| `name` | string | yes | Parent subvolume name. |
+
+**Returns:**
+
+`string[]`
+
+
+### `subvolume.clone`
+
+Create a writable COW clone of a subvolume by taking a non-read-only bcachefs snapshot under a new name (O(1), shares data blocks with the source).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Name of the filesystem containing the source subvolume. |
+| `name` | string | yes | Name of the subvolume to clone. |
+| `new_name` | string | yes | Name for the new writable subvolume. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
+Only includes options that differ from the filesystem default. |
+| `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `comments` | string | no | Free-text description or notes for this subvolume. |
+| `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
+| `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
+| `name` | string | yes | Subvolume name (unique within the filesystem). |
+| `owner` | string | no | Token name that created this subvolume; None for subvolumes created by human users. |
+| `parent` | string | no | Parent subvolume name if this is a clone (from bcachefs snapshot_parent). |
+| `path` | string | yes | Absolute filesystem path to the subvolume directory. |
+| `properties` | object | no | Arbitrary key-value metadata stored as POSIX xattrs (user.* namespace).
+Used by nasty-csi to track CSI volume metadata without sidecar files. |
+| `quota_bytes` | integer | no | Hard quota limit in bytes for filesystem subvolumes. `None`
+means no limit set (the subvolume can grow to fill the
+filesystem). Always `None` for block subvolumes — their
+ceiling is `volsize_bytes`, not a quota. |
+| `snapshots` | string[] | yes | Names of snapshots belonging to this subvolume. |
+| `subvolume_type` | `SubvolumeType` | yes | Whether this is a filesystem or block-backed subvolume. |
+| `used_bytes` | integer | no | Disk usage in bytes. For filesystem subvolumes, comes from the
+per-project quota (set on every create, so tracking is always
+on); `None` only on legacy subvolumes created before the
+always-track change. For block subvolumes, comes from the
+backing image's allocated size. |
+| `volsize_bytes` | integer | no | Size of the backing sparse image in bytes (block subvolumes only). |
+
+
+### `subvolume.update`
+
+Update mutable subvolume attributes (compression, comments, foreground/background/promote/metadata targets, data replicas) via bcachefs `set-file-option` and xattrs.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `background_target` | string | no | Device or label for background moves/recompression. Use `-` to remove. |
+| `comments` | string | no | New description for the subvolume. Empty string clears the comment. |
+| `compression` | string | no | New compression algorithm (e.g. `lz4`, `zstd`, `none`). `none` clears compression. |
+| `data_replicas` | integer | no | Number of data replicas. Use `0` to reset to filesystem default. |
+| `filesystem` | string | yes | Name of the filesystem containing the subvolume. |
+| `foreground_target` | string | no | Device or label for foreground writes. Use `-` to remove. |
+| `metadata_target` | string | no | Device or label for metadata/btree writes. Use `-` to remove. |
+| `name` | string | yes | Name of the subvolume to update. |
+| `promote_target` | string | no | Device or label to promote data to on read. Use `-` to remove. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
+Only includes options that differ from the filesystem default. |
+| `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `comments` | string | no | Free-text description or notes for this subvolume. |
+| `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
+| `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
+| `name` | string | yes | Subvolume name (unique within the filesystem). |
+| `owner` | string | no | Token name that created this subvolume; None for subvolumes created by human users. |
+| `parent` | string | no | Parent subvolume name if this is a clone (from bcachefs snapshot_parent). |
+| `path` | string | yes | Absolute filesystem path to the subvolume directory. |
+| `properties` | object | no | Arbitrary key-value metadata stored as POSIX xattrs (user.* namespace).
+Used by nasty-csi to track CSI volume metadata without sidecar files. |
+| `quota_bytes` | integer | no | Hard quota limit in bytes for filesystem subvolumes. `None`
+means no limit set (the subvolume can grow to fill the
+filesystem). Always `None` for block subvolumes — their
+ceiling is `volsize_bytes`, not a quota. |
+| `snapshots` | string[] | yes | Names of snapshots belonging to this subvolume. |
+| `subvolume_type` | `SubvolumeType` | yes | Whether this is a filesystem or block-backed subvolume. |
+| `used_bytes` | integer | no | Disk usage in bytes. For filesystem subvolumes, comes from the
+per-project quota (set on every create, so tracking is always
+on); `None` only on legacy subvolumes created before the
+always-track change. For block subvolumes, comes from the
+backing image's allocated size. |
+| `volsize_bytes` | integer | no | Size of the backing sparse image in bytes (block subvolumes only). |
+
+
+### `subvolume.list_dependents`
+
+Batched read returning the set of downstream entities (apps, VMs, backup jobs, shares of every protocol) attributed to each subvolume on the system, optionally filtered to the session's scoped filesystem.
+
+**Role:** `any`
+
+**Returns:**
+
+``SubvolumeDependents`[]`
+
+
+## SMB Users
+
+### `smb.user.list`
+
+List SMB users by parsing `pdbedit -L` output and filtering to UIDs ≥ 3000.
+
+**Role:** `any`
+
+**Returns:**
+
+``SmbUser`[]`
+
+
+### `smb.user.create`
+
+Create a Linux system user (no shell, no home, UID auto-assigned from 3000+) and set their Samba password. Requires the SMB protocol to be enabled.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `password` | string | yes | Password for SMB authentication. |
+| `username` | string | yes | Username (alphanumeric + hyphens, 1-32 chars). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `uid` | integer | yes | Unix UID. |
+| `username` | string | yes | Linux username. |
+
+
+### `smb.user.delete`
+
+Remove the user's Samba password entry and delete the Linux system account. Requires the SMB protocol to be enabled.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `username` | string | yes | SMB username to delete. |
+
+
+### `smb.user.set_password`
+
+Change an existing SMB user's Samba password. Requires the SMB protocol to be enabled.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `password` | string | yes | New password. |
+| `username` | string | yes | Existing SMB username. |
+
+
+## SMB Groups
+
+### `smb.group.list`
+
+List SMB-managed groups (GIDs in the 3000-3999 range) read from `/etc/group`, including members.
+
+**Role:** `any`
+
+**Returns:**
+
+``SmbGroup`[]`
+
+
+### `smb.group.create`
+
+Create a Linux system group (GID auto-assigned from the SMB range, 3000+) used for SMB access control.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Group name to create. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `gid` | integer | yes | Unix GID. |
+| `members` | string[] | yes | Group members (usernames). |
+| `name` | string | yes | Linux group name. |
+
+
+### `smb.group.delete`
+
+Delete the SMB-managed Linux group via `groupdel`.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Group name to delete. |
+
+
+### `smb.group.add_member`
+
+Add an existing user to an existing SMB group via `usermod -aG`.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `group` | string | yes | Group name. |
+| `user` | string | yes | Username to add. |
+
+
+### `smb.group.remove_member`
+
+Remove a user from an SMB group via `gpasswd -d`.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `group` | string | yes | Group name. |
+| `user` | string | yes | Username to remove. |
+
+
+## Backup
+
+### `backup.status`
+
+Report whether any backup is currently running and which profile id it belongs to.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `profile_id` | string | no |  |
+| `progress` | string | no |  |
+| `running` | boolean | yes |  |
+
+
+### `backup.profile.list`
+
+Return all configured backup profiles.
+
+**Role:** `any`
+
+**Returns:**
+
+``BackupProfile`[]`
+
+
+### `backup.profile.get`
+
+Return a single backup profile by id.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup profile identifier. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `name` | string | yes |  |
+| `password` | string | yes |  |
+| `repo_initialized` | boolean | no |  |
+| `retention` | `RetentionPolicy` | no |  |
+| `schedule` | string | no |  |
+| `snapshot_before` | boolean | no |  |
+| `sources` | string[] | yes |  |
+| `target` | `BackupTarget` | yes |  |
+
+
+### `backup.profile.create`
+
+Create a new backup profile (name, sources, target, password, retention) and persist it to `/var/lib/nasty/backups.json`. Returns the stored profile with an auto-assigned 8-char UUID id when the caller leaves `id` empty.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `name` | string | yes |  |
+| `password` | string | yes |  |
+| `repo_initialized` | boolean | no |  |
+| `retention` | `RetentionPolicy` | no |  |
+| `schedule` | string | no |  |
+| `snapshot_before` | boolean | no |  |
+| `sources` | string[] | yes |  |
+| `target` | `BackupTarget` | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `name` | string | yes |  |
+| `password` | string | yes |  |
+| `repo_initialized` | boolean | no |  |
+| `retention` | `RetentionPolicy` | no |  |
+| `schedule` | string | no |  |
+| `snapshot_before` | boolean | no |  |
+| `sources` | string[] | yes |  |
+| `target` | `BackupTarget` | yes |  |
+
+
+### `backup.profile.update`
+
+Replace the backup profile identified by `id` with the supplied profile body. The handler reads `id` from params *and* deserializes the same params object into BackupProfile — send the full BackupProfile shape with `id` populated.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `name` | string | yes |  |
+| `password` | string | yes |  |
+| `repo_initialized` | boolean | no |  |
+| `retention` | `RetentionPolicy` | no |  |
+| `schedule` | string | no |  |
+| `snapshot_before` | boolean | no |  |
+| `sources` | string[] | yes |  |
+| `target` | `BackupTarget` | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `name` | string | yes |  |
+| `password` | string | yes |  |
+| `repo_initialized` | boolean | no |  |
+| `retention` | `RetentionPolicy` | no |  |
+| `schedule` | string | no |  |
+| `snapshot_before` | boolean | no |  |
+| `sources` | string[] | yes |  |
+| `target` | `BackupTarget` | yes |  |
+
+
+### `backup.profile.delete`
+
+Remove the backup profile with the given id from persisted state.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup profile identifier. |
+
+
+### `backup.run`
+
+Spawn a background task that runs the profile's backup (auto-initializing the repo if needed, then pruning per the retention policy); the RPC returns immediately after accepting the request.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup profile identifier. |
+
+**Returns:**
+
+`object`
+
+
+### `backup.snapshots`
+
+List all snapshots stored in the profile's repository (id, time, hostname, paths, tags).
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup profile identifier. |
+
+**Returns:**
+
+``BackupSnapshot`[]`
+
+
+### `backup.repo.init`
+
+Initialize a fresh rustic repository at the profile's target using its password, then mark the profile as `repo_initialized`.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup profile identifier. |
+
+**Returns:**
+
+`object`
+
+
+### `backup.repo.check`
+
+Run a rustic repository integrity check (`repo.check`) on the profile's target repo and return a status message.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup profile identifier. |
+
+**Returns:**
+
+`object`
+
+
+## VMs
+
+### `vm.capabilities`
+
+Report host VM capabilities (KVM availability, UEFI firmware availability, CPU arch, and PCI devices available for passthrough).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `arch` | string | yes | CPU architecture (e.g. "x86_64", "aarch64"). |
+| `kvm_available` | boolean | yes | Whether KVM hardware acceleration is available. |
+| `passthrough_devices` | `PciDevice2`[] | yes | Available PCI devices for passthrough. |
+| `uefi_available` | boolean | yes | Whether OVMF UEFI firmware is available. |
+
+
+### `vm.list`
+
+List all VMs with their current status (config plus running/pid/vnc_port).
+
+**Role:** `any`
+
+**Returns:**
+
+``VmStatus`[]`
+
+
+### `vm.get`
+
+Return full status (config plus running/pid/vnc_port) for a single VM by id.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | VM identifier. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Whether the VM should auto-start on NASty boot. |
+| `boot_iso` | string | no | Legacy single-ISO field, kept for cross-version state-file
+compatibility. On load we migrate this into `cdroms` if
+`cdroms` is empty; on save we mirror `cdroms.first()` back
+into here so a hypothetical rollback to a pre-`cdroms` engine
+still sees the boot ISO. New code reads `cdroms` exclusively. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. The first entry is the
+one QEMU treats as the boot CD when `boot_order = "cdrom"`;
+additional entries show up as extra read-only CDs inside the
+guest (typical use: Windows 11 install needs the Win11 ISO
+alongside the virtio-win driver ISO so the installer can see
+the virtio storage controller — issue #285). |
+| `cpu_model` | string | no | CPU model: "host" (default), "max", "qemu64", etc. |
+| `cpus` | integer | yes | Number of virtual CPU cores. |
+| `description` | string | no | Optional description. |
+| `disks` | `VmDisk`[] | yes | Boot disk configuration. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments for advanced users. |
+| `id` | string | yes | Unique VM identifier (UUID). |
+| `machine_type` | string | no | Machine type: "q35" (default for x86), "i440fx". |
+| `memory_mib` | integer | yes | RAM in MiB. |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | yes | Network interfaces. |
+| `passthrough_devices` | `PassthroughDevice`[] | yes | PCI devices to pass through via VFIO. |
+| `pid` | integer | no | QEMU process PID (if running). |
+| `running` | boolean | yes | Whether the VM is currently running. |
+| `uefi` | boolean | no | Whether to use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through. Identified by vendor/product ID
+rather than bus/addr because USB enumeration order shuffles
+across reboots; pinning to IDs is the stable choice. Caveat:
+all devices matching a (vendor, product) pair attach, so
+plugging in two identical keyboards passes both through. |
+| `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
+| `vnc_port` | integer | no | VNC display port (if running, for console access). |
+
+
+### `vm.create`
+
+Create a new VM config from the supplied spec (name, CPUs, memory, disks, networks, passthrough devices, boot options, etc.).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Auto-start on NASty boot (default: false). |
+| `boot_iso` | string | no | Legacy single-ISO field. When set and `cdroms` is unset, the
+engine treats it as `cdroms = vec![boot_iso]`. Kept for
+clients that haven't been updated to send the new field. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. First entry boots when
+`boot_order = "cdrom"`. See #285 for the Windows-install
+motivating case (Win11 ISO + virtio-win driver ISO). |
+| `cpus` | integer | no | Number of virtual CPU cores (default: 1). |
+| `description` | string | no | Description. |
+| `disks` | `VmDisk`[] | no | Block device paths for VM disks. |
+| `memory_mib` | integer | no | RAM in MiB (default: 1024). |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | no | Network configuration. |
+| `passthrough_devices` | `PassthroughDevice`[] | no | PCI devices to pass through. |
+| `uefi` | boolean | no | Use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through (vendor:product pairs). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Whether the VM should auto-start on NASty boot. |
+| `boot_iso` | string | no | Legacy single-ISO field, kept for cross-version state-file
+compatibility. On load we migrate this into `cdroms` if
+`cdroms` is empty; on save we mirror `cdroms.first()` back
+into here so a hypothetical rollback to a pre-`cdroms` engine
+still sees the boot ISO. New code reads `cdroms` exclusively. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. The first entry is the
+one QEMU treats as the boot CD when `boot_order = "cdrom"`;
+additional entries show up as extra read-only CDs inside the
+guest (typical use: Windows 11 install needs the Win11 ISO
+alongside the virtio-win driver ISO so the installer can see
+the virtio storage controller — issue #285). |
+| `cpu_model` | string | no | CPU model: "host" (default), "max", "qemu64", etc. |
+| `cpus` | integer | yes | Number of virtual CPU cores. |
+| `description` | string | no | Optional description. |
+| `disks` | `VmDisk`[] | yes | Boot disk configuration. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments for advanced users. |
+| `id` | string | yes | Unique VM identifier (UUID). |
+| `machine_type` | string | no | Machine type: "q35" (default for x86), "i440fx". |
+| `memory_mib` | integer | yes | RAM in MiB. |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | yes | Network interfaces. |
+| `passthrough_devices` | `PassthroughDevice`[] | yes | PCI devices to pass through via VFIO. |
+| `uefi` | boolean | no | Whether to use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through. Identified by vendor/product ID
+rather than bus/addr because USB enumeration order shuffles
+across reboots; pinning to IDs is the stable choice. Caveat:
+all devices matching a (vendor, product) pair attach, so
+plugging in two identical keyboards passes both through. |
+| `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
+
+
+### `vm.update`
+
+Apply partial edits to an existing VM's config (name, CPUs, memory, disks, networks, passthrough, CD-ROMs, boot order, UEFI, autostart, etc.). Hardware changes require the VM to be stopped.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Auto-start. |
+| `boot_iso` | string | no | Legacy single-ISO setter. When set and `cdroms` is absent,
+the engine treats an empty string as "clear all CD-ROMs" and
+a non-empty string as "set CD-ROM list to a single entry."
+Use `cdroms` for new code. |
+| `boot_order` | string | no | Boot order. |
+| `cdroms` | string[] | no | Replace the CD-ROM list. Empty vec clears all CD-ROMs; absent
+(`None`) leaves the existing list untouched. |
+| `cpu_model` | string | no | CPU model. |
+| `cpus` | integer | no | New CPU count. |
+| `description` | string | no | Description. |
+| `disks` | `VmDisk`[] | no | Replace disk list. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments. |
+| `id` | string | yes | VM ID. |
+| `machine_type` | string | no | Machine type. |
+| `memory_mib` | integer | no | New RAM in MiB. |
+| `name` | string | no | New name. |
+| `networks` | `VmNetwork`[] | no | Replace network list. |
+| `passthrough_devices` | `PassthroughDevice`[] | no | Replace passthrough devices. |
+| `uefi` | boolean | no | UEFI setting. |
+| `usb_devices` | `UsbPassthrough`[] | no | Replace USB passthrough devices. |
+| `vga` | string | no | VGA device type. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Whether the VM should auto-start on NASty boot. |
+| `boot_iso` | string | no | Legacy single-ISO field, kept for cross-version state-file
+compatibility. On load we migrate this into `cdroms` if
+`cdroms` is empty; on save we mirror `cdroms.first()` back
+into here so a hypothetical rollback to a pre-`cdroms` engine
+still sees the boot ISO. New code reads `cdroms` exclusively. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. The first entry is the
+one QEMU treats as the boot CD when `boot_order = "cdrom"`;
+additional entries show up as extra read-only CDs inside the
+guest (typical use: Windows 11 install needs the Win11 ISO
+alongside the virtio-win driver ISO so the installer can see
+the virtio storage controller — issue #285). |
+| `cpu_model` | string | no | CPU model: "host" (default), "max", "qemu64", etc. |
+| `cpus` | integer | yes | Number of virtual CPU cores. |
+| `description` | string | no | Optional description. |
+| `disks` | `VmDisk`[] | yes | Boot disk configuration. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments for advanced users. |
+| `id` | string | yes | Unique VM identifier (UUID). |
+| `machine_type` | string | no | Machine type: "q35" (default for x86), "i440fx". |
+| `memory_mib` | integer | yes | RAM in MiB. |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | yes | Network interfaces. |
+| `passthrough_devices` | `PassthroughDevice`[] | yes | PCI devices to pass through via VFIO. |
+| `uefi` | boolean | no | Whether to use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through. Identified by vendor/product ID
+rather than bus/addr because USB enumeration order shuffles
+across reboots; pinning to IDs is the stable choice. Caveat:
+all devices matching a (vendor, product) pair attach, so
+plugging in two identical keyboards passes both through. |
+| `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
+
+
+### `vm.delete`
+
+Delete the VM config identified by `id` (does not remove backing disk subvolumes).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | VM identifier. |
+
+
+### `vm.start`
+
+Launch QEMU for the VM identified by `id` and return its updated status.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | VM identifier. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Whether the VM should auto-start on NASty boot. |
+| `boot_iso` | string | no | Legacy single-ISO field, kept for cross-version state-file
+compatibility. On load we migrate this into `cdroms` if
+`cdroms` is empty; on save we mirror `cdroms.first()` back
+into here so a hypothetical rollback to a pre-`cdroms` engine
+still sees the boot ISO. New code reads `cdroms` exclusively. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. The first entry is the
+one QEMU treats as the boot CD when `boot_order = "cdrom"`;
+additional entries show up as extra read-only CDs inside the
+guest (typical use: Windows 11 install needs the Win11 ISO
+alongside the virtio-win driver ISO so the installer can see
+the virtio storage controller — issue #285). |
+| `cpu_model` | string | no | CPU model: "host" (default), "max", "qemu64", etc. |
+| `cpus` | integer | yes | Number of virtual CPU cores. |
+| `description` | string | no | Optional description. |
+| `disks` | `VmDisk`[] | yes | Boot disk configuration. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments for advanced users. |
+| `id` | string | yes | Unique VM identifier (UUID). |
+| `machine_type` | string | no | Machine type: "q35" (default for x86), "i440fx". |
+| `memory_mib` | integer | yes | RAM in MiB. |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | yes | Network interfaces. |
+| `passthrough_devices` | `PassthroughDevice`[] | yes | PCI devices to pass through via VFIO. |
+| `pid` | integer | no | QEMU process PID (if running). |
+| `running` | boolean | yes | Whether the VM is currently running. |
+| `uefi` | boolean | no | Whether to use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through. Identified by vendor/product ID
+rather than bus/addr because USB enumeration order shuffles
+across reboots; pinning to IDs is the stable choice. Caveat:
+all devices matching a (vendor, product) pair attach, so
+plugging in two identical keyboards passes both through. |
+| `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
+| `vnc_port` | integer | no | VNC display port (if running, for console access). |
+
+
+### `vm.stop`
+
+Gracefully stop the running VM identified by `id` (ACPI shutdown via QMP).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | VM identifier. |
+
+
+### `vm.kill`
+
+Force-terminate the QEMU process for a running VM by `id` (ungraceful — used when `vm.stop` won't return).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | VM identifier. |
+
+
+### `vm.snapshot`
+
+Snapshot every block subvolume backing a VM under a shared name, freezing the guest filesystem via QMP `guest-fsfreeze-freeze` first if the VM is running.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | VM ID. |
+| `name` | string | yes | Snapshot name (applied to all disk subvolumes). |
+
+**Returns:**
+
+``VmDiskSubvolume`[]`
+
+
+### `vm.clone`
+
+Clone a stopped VM by COW-cloning each of its disk subvolumes and creating a new VM config that points at those clones.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Source VM ID. |
+| `new_name` | string | yes | Name for the cloned VM. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Whether the VM should auto-start on NASty boot. |
+| `boot_iso` | string | no | Legacy single-ISO field, kept for cross-version state-file
+compatibility. On load we migrate this into `cdroms` if
+`cdroms` is empty; on save we mirror `cdroms.first()` back
+into here so a hypothetical rollback to a pre-`cdroms` engine
+still sees the boot ISO. New code reads `cdroms` exclusively. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. The first entry is the
+one QEMU treats as the boot CD when `boot_order = "cdrom"`;
+additional entries show up as extra read-only CDs inside the
+guest (typical use: Windows 11 install needs the Win11 ISO
+alongside the virtio-win driver ISO so the installer can see
+the virtio storage controller — issue #285). |
+| `cpu_model` | string | no | CPU model: "host" (default), "max", "qemu64", etc. |
+| `cpus` | integer | yes | Number of virtual CPU cores. |
+| `description` | string | no | Optional description. |
+| `disks` | `VmDisk`[] | yes | Boot disk configuration. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments for advanced users. |
+| `id` | string | yes | Unique VM identifier (UUID). |
+| `machine_type` | string | no | Machine type: "q35" (default for x86), "i440fx". |
+| `memory_mib` | integer | yes | RAM in MiB. |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | yes | Network interfaces. |
+| `passthrough_devices` | `PassthroughDevice`[] | yes | PCI devices to pass through via VFIO. |
+| `uefi` | boolean | no | Whether to use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through. Identified by vendor/product ID
+rather than bus/addr because USB enumeration order shuffles
+across reboots; pinning to IDs is the stable choice. Caveat:
+all devices matching a (vendor, product) pair attach, so
+plugging in two identical keyboards passes both through. |
+| `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
+
+
+## VM Disk Images
+
+### `vm.images.list`
+
+List VM image files found under `vms/images` across all mounted filesystems, with per-image name/path/filesystem/size/format/compression, plus a flag indicating whether any such directory exists.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `images` | object[] | yes |  |
+| `subvolume_exists` | boolean | yes | True if at least one `vms/images` directory was found. |
+
+
+### `vm.images.ensure`
+
+Ensure the `vms/images` directory exists on the named filesystem (creating it, and migrating from legacy `.nasty/images` if present); return the absolute images directory path.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+
+**Returns:**
+
+`object`
+
+
+### `vm.images.import_info`
+
+Pre-flight inspection for the disk-import WebSocket — return format, virtual size, actual size, and (if applicable) compression for a VM image file under `vms/images` on the named filesystem.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+| `name` | string | yes | Image filename. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `actual_size` | integer | yes |  |
+| `compression` | string | no | Compression algorithm if any. |
+| `format` | string | yes | Image format (qcow2, raw, …). |
+| `virtual_size` | integer | yes |  |
+
+
+## Apps
+
+### `apps.status`
+
+Return runtime status of the apps subsystem (enabled flag, Docker running, app count, memory usage, storage path/health, Docker version, total disk usage).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `app_count` | integer | yes | Number of managed apps (running or stopped). |
+| `disk_usage_bytes` | integer | no | Docker disk usage: images + containers + volumes in bytes. |
+| `docker_version` | string | no | Docker server version. |
+| `enabled` | boolean | yes | Whether the apps runtime is enabled. |
+| `memory_bytes` | integer | no | Total memory usage of managed containers in bytes. |
+| `running` | boolean | yes | Whether Docker is currently running and responsive. |
+| `storage_ok` | boolean | yes | Whether the storage directory exists on disk. |
+| `storage_path` | string | no | Path to the apps storage directory on bcachefs. |
+
+
+### `apps.list`
+
+List every NASty-managed app (both simple and compose), returning each one's high-level App record.
+
+**Role:** `any`
+
+**Returns:**
+
+``App`[]`
+
+
+### `apps.get`
+
+Return the high-level App record (name, image, status, kind, containers, ports, unsafe_mode, proxy_disabled_reason) for a single named app.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+
+### `apps.config`
+
+Return the deployed configuration of a named simple app (image, ports, env, volumes, resource limits, allow_unsafe), with env entries tagged where they match the image's own defaults so the WebUI Edit form can grey them out.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `allow_unsafe` | boolean | no | Whether the app was deployed with allow_unsafe (read from container label). |
+| `cpu_limit` | string | no |  |
+| `env` | `AppEnv`[] | yes |  |
+| `image` | string | yes |  |
+| `memory_limit` | string | no |  |
+| `name` | string | yes |  |
+| `ports` | `AppPort`[] | yes |  |
+| `volumes` | `AppVolume`[] | yes |  |
+
+
+### `apps.stats`
+
+Return live CPU / memory / network / block-IO stats for every NASty-managed app, summed across containers for compose apps.
+
+**Role:** `any`
+
+**Returns:**
+
+``AppStats`[]`
+
+
+### `apps.logs`
+
+Return Docker logs for a named simple app's container (the `nasty-<name>` container), defaulting to the last 100 lines unless `tail` overrides it.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+| `tail` | integer | no | Number of log lines from the tail. |
+
+**Returns:**
+
+`object`
+
+
+### `apps.container.logs`
+
+Return Docker logs for an arbitrary container by ID or name (no `nasty-` prefix assumed), defaulting to the last 100 lines unless `tail` overrides it.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `container_id` | string | yes | Container ID or name. |
+| `tail` | integer | no |  |
+
+**Returns:**
+
+`object`
+
+
+### `apps.inspect`
+
+Return the raw Docker `inspect` JSON for a named simple app's container as an untyped object.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+**Returns:**
+
+`object`
+
+
+### `apps.inspect_image`
+
+Inspect a container image (registry/local) and return its declared ports, VOLUME bind paths, runtime user, and any known sub-path recipe — used by the install wizard to prefill the form.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `image` | string | yes | Image reference (`repo:tag`). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ports` | `AppPort`[] | yes |  |
+| `subpath_recipe` | `SubPathRecipe` \| null | no | Known recipe for configuring this image to serve under
+`/apps/<name>/` behind NASty's path-prefix reverse proxy. When
+present, the WebUI offers an "Apply" button that appends the
+recipe's env entries to the form (the user can still edit them).
+Catches apps that *could* run behind a sub-path but only with
+specific env vars set — e.g. Grafana needs `GF_SERVER_ROOT_URL`
+plus `GF_SERVER_SERVE_FROM_SUB_PATH=true`; without those, our
+post-install probe would (correctly) disable ingress and the
+user would only see the direct-port link, even though a one-line
+env change would have made the proxy work. |
+| `user` | string | no | Image's runtime user as declared in `Config.User`. May be numeric
+(`1000` / `1000:1000`) or named (`nonroot:nonroot`). The WebUI
+surfaces this so the user knows the host volume dirs will be
+chowned to that identity by the install pipeline. `None` = root. |
+| `volumes` | `AppVolume`[] | no | Bind-mount paths the image declares via `VOLUME` in its Dockerfile.
+The WebUI installer prefills these as Volume rows so the user
+doesn't have to know that e.g. ghcr.io/consi/haze needs
+`/var/lib/haze` to be persistent for SQLite to work. |
+
+
+### `apps.caddy.routes`
+
+Return every route Caddy is currently serving (engine-owned and static), enriched with on-disk TLS cert info for host-match rows — powers the Ingress overview page.
+
+**Role:** `any`
+
+**Returns:**
+
+``CaddyRouteSummary`[]`
+
+
+### `apps.check_ports`
+
+Check a list of host ports for conflicts against other managed apps and system listeners, returning each conflicting port and what is using it.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `exclude_app` | string | no | App name to exclude from conflict check (for updates). |
+| `ports` | integer[] | yes | Ports to check for conflicts. |
+
+**Returns:**
+
+``PortConflict`[]`
+
+
+### `apps.check_devices`
+
+Stat a list of host device paths and report which are missing, including whether the parent directory exists to distinguish "device absent" from "kernel module not loaded".
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `paths` | string[] | yes | Host device paths to check, e.g. `/dev/dri/renderD128`. Anything
+after the first colon (the in-container path or cgroup perms) is
+the caller's job to strip — this RPC only stat()s host paths. |
+
+**Returns:**
+
+``DeviceMissing`[]`
+
+
+### `apps.check_volumes`
+
+Parse a docker-compose YAML and report bind-mount source paths whose host owner does not match the container's runtime user (or whose source path is missing).
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `compose` | string | yes | Full docker-compose YAML text. Server parses it and stat()s each
+bind-mount source. Sent in full (rather than per-volume) so the
+server can correlate sources with their owning service's `user:`
+field — that's the comparison we make. |
+
+**Returns:**
+
+``VolumeMismatch`[]`
+
+
+### `apps.enable`
+
+Enable the apps runtime on this box (optionally pinning the storage filesystem) and start Docker.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | no | Filesystem to store app data on. |
+
+
+### `apps.disable`
+
+Disable the apps runtime on this box (stop Docker and clear the persisted enabled flag in AppsConfig).
+
+**Role:** `operator`
+
+
+### `apps.install`
+
+Deploy a new simple (single-container) app: validate bind mounts, pull the image, create volume dirs with the image's runtime uid/gid, start the container, and optionally wire up subdomain or path-prefix ingress.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `allow_unsafe` | boolean | no | Opt out of the strict bind-mount allowlist. Admin-only / audited /
+surfaced as a badge in the UI. Engine state and the host root are
+still rejected even with this set. |
+| `cpu_limit` | string | no | CPU limit (e.g. "0.5" for half a core, "2" for 2 cores). |
+| `env` | `AppEnv`[] | no | Environment variables. |
+| `image` | string | yes | Container image (e.g. "lscr.io/linuxserver/plex:latest"). |
+| `memory_limit` | string | no | Memory limit (e.g. "256m", "1g"). |
+| `name` | string | yes | App name. Must be DNS-safe. |
+| `ports` | `AppPort`[] | no | Ports to expose. |
+| `subdomain` | string | no | Optional FQDN to serve the app at via subdomain mode (e.g.
+`jellyfin.example.com`). When set, the install pipeline emits a
+host-matching Caddy route instead of the default path-prefix
+route, and skips the post-install probe (subdomain mode roots
+the app at `/`, so the absolute-asset-path failure mode the
+probe catches can't happen). Empty/omitted = path-prefix
+behaviour, the historical default.
+
+Conflict detection happens at the engine-binary layer before
+install runs (see deploy_simple in app_deploy.rs) so the
+operator doesn't pay for an image pull just to discover the
+hostname is taken. |
+| `volumes` | `AppVolume`[] | no | Bind-mount volumes. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+
+### `apps.update`
+
+Update a previously installed simple app in place by re-running the install pipeline against the new InstallAppRequest (same shape as install).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `allow_unsafe` | boolean | no | Opt out of the strict bind-mount allowlist. Admin-only / audited /
+surfaced as a badge in the UI. Engine state and the host root are
+still rejected even with this set. |
+| `cpu_limit` | string | no | CPU limit (e.g. "0.5" for half a core, "2" for 2 cores). |
+| `env` | `AppEnv`[] | no | Environment variables. |
+| `image` | string | yes | Container image (e.g. "lscr.io/linuxserver/plex:latest"). |
+| `memory_limit` | string | no | Memory limit (e.g. "256m", "1g"). |
+| `name` | string | yes | App name. Must be DNS-safe. |
+| `ports` | `AppPort`[] | no | Ports to expose. |
+| `subdomain` | string | no | Optional FQDN to serve the app at via subdomain mode (e.g.
+`jellyfin.example.com`). When set, the install pipeline emits a
+host-matching Caddy route instead of the default path-prefix
+route, and skips the post-install probe (subdomain mode roots
+the app at `/`, so the absolute-asset-path failure mode the
+probe catches can't happen). Empty/omitted = path-prefix
+behaviour, the historical default.
+
+Conflict detection happens at the engine-binary layer before
+install runs (see deploy_simple in app_deploy.rs) so the
+operator doesn't pay for an image pull just to discover the
+hostname is taken. |
+| `volumes` | `AppVolume`[] | no | Bind-mount volumes. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+
+### `apps.remove`
+
+Remove a named simple app (stop + delete the container, clean up volume dirs, remove the Caddy ingress) and asynchronously reapply TLS so Caddy stops renewing any orphaned subdomain cert.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+
+### `apps.start`
+
+Start a previously stopped named app (simple container or compose project).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+
+### `apps.stop`
+
+Stop a named app (simple container or compose project) without removing it.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+
+### `apps.restart`
+
+Restart a named app (simple container or compose project).
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+
+### `apps.pull`
+
+Pull the latest image(s) for a named app and recreate the container(s) — for simple apps it stops/removes/reinstalls preserving config and subdomain mode; for compose apps it runs `docker compose pull` then `up -d`.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+
+### `apps.prune`
+
+Prune unused Docker images and volumes, returning the number of images removed and the bytes reclaimed.
+
+**Role:** `operator`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `images_removed` | integer | yes |  |
+| `space_reclaimed_bytes` | integer | yes |  |
+
+
+### `apps.exec_command`
+
+Return the `docker exec -it <container> <shell>` command string for opening an interactive shell into a named app, probing /bin/bash, /bin/sh, /bin/ash to find an available shell.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+**Returns:**
+
+`object`
+
+
+### `apps.fix_volume_perms`
+
+Chown a host bind-mount source path to the given uid/gid (optionally recursively), enforcing the same forbidden-bind validation as compose deploys.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `gid` | integer | yes |  |
+| `host_path` | string | yes | Host bind-mount source to chown. Validated against the same
+forbidden-bind rules as compose deploys (no `..`, no `/`, no
+engine state). |
+| `recursive` | boolean | no | When true, recurse into the directory tree. Off by default
+because recursive chown on a path like `/fs/tank/media` rewrites
+ownership on every existing file under it — almost never what
+the user wants if the path was pre-populated. |
+| `uid` | integer | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ok` | boolean | yes |  |
+
+
+### `apps.compose.get`
+
+Return the raw docker-compose.yml file contents for a named compose-based app.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Compose app name. |
+
+**Returns:**
+
+`object`
+
+
+### `apps.compose.logs`
+
+Return aggregated `docker compose logs` output for a named compose app, defaulting to the last 100 lines unless `tail` overrides it.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes |  |
+| `tail` | integer | no |  |
+
+**Returns:**
+
+`object`
+
+
+### `apps.compose.install`
+
+Deploy a new compose-based app by writing its docker-compose.yml to disk, pre-creating bind-mount dirs with the right ownership, running `docker compose up -d`, and auto-creating an ingress for the first exposed TCP port.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `compose_file` | string | yes | Contents of docker-compose.yml. |
+| `name` | string | yes | App name (used as compose project name). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+
+### `apps.compose.update`
+
+Overwrite a compose app's docker-compose.yml, pre-create any newly added bind-mount sources, and run `docker compose up -d --no-build --pull missing --remove-orphans` to apply the new config.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `compose_file` | string | yes | Contents of docker-compose.yml. |
+| `name` | string | yes | App name (used as compose project name). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+
+### `apps.compose.remove`
+
+Tear down a compose app via `docker compose down -v --remove-orphans`, delete its project directory, and remove its Caddy ingress.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Compose app name. |
+
+
+### `apps.ingress.list`
+
+List all per-app reverse-proxy ingresses currently registered in Caddy (name, host_port, path, optional subdomain).
+
+**Role:** `any`
+
+**Returns:**
+
+``AppIngress`[]`
+
+
+### `apps.ingress.set`
+
+Set (or replace) an app's Caddy reverse-proxy ingress, gated on a subdomain-conflict check, persisting subdomain mode and asynchronously reapplying TLS automation so a new subdomain gets a cert immediately.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `host_port` | integer | yes | Host port to proxy to. |
+| `name` | string | yes | App name. |
+| `subdomain` | string | no | Opt into subdomain mode by providing a fully-qualified hostname
+(e.g. `jellyfin.example.com`). When set, the engine emits a
+host-matching Caddy route instead of the default
+`/apps/<name>/` path-prefix route, and persists the choice in
+the app manifest so engine restarts preserve it. Set to `null`
+or omit to use path-prefix mode (the historical default). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `host_port` | integer | yes | Host port to proxy to. |
+| `name` | string | yes | App name. |
+| `path` | string | yes | URL path prefix (e.g. "/apps/plex/"). Always set; in subdomain
+mode it's purely informational (the WebUI prefers the
+`subdomain`-derived URL for the Open button) since the app
+answers at root under the configured hostname. |
+| `subdomain` | string | no | Fully-qualified hostname the app is served under when subdomain
+mode is on (e.g. `jellyfin.example.com`). When set, Caddy
+matches the route by `host` rather than path-prefix, and the
+app sees itself rooted at `/` — sidestepping the absolute-asset
+failure mode that #219's probe disables path-prefix ingress for. |
+
+
+### `apps.ingress.remove`
+
+Remove an app's Caddy ingress route, clear the persisted subdomain choice, and asynchronously reapply TLS automation so Caddy stops trying to renew the orphaned cert.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name. |
+
+
+### `apps.ingress.check_conflict`
+
+Best-effort read-only lookup that returns a human-readable "in use by X" reason if the proposed subdomain conflicts with another app or the WebUI hostname, or an empty string when the choice is clear.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | App name (for self-exclusion). |
+| `subdomain` | string | yes | Proposed subdomain. |
+
+**Returns:**
+
+`object`
 
 
 ---
@@ -2439,12 +5729,150 @@ Enum: `warning`, `critical`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `created_at` | integer | yes | Unix timestamp (seconds) when the token was created. |
-| `expires_at` | integer | no | Unix timestamp after which the token is rejected. None = never expires. |
-| `filesystem` | string | no | Filesystem this token is scoped to, if any. |
-| `id` | string | yes | Unique token identifier. |
-| `name` | string | yes | Human-readable token name. |
-| `role` | `Role` | yes | Role assigned to this token. |
+| `allowed_ips` | string[] | yes |  |
+| `created_at` | integer | yes |  |
+| `expires_at` | integer | no |  |
+| `filesystem` | string | no |  |
+| `id` | string | yes |  |
+| `name` | string | yes |  |
+| `role` | `Role` | yes |  |
+
+### `App`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
+| `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `image` | string | yes | Container image (primary image for compose apps). |
+| `kind` | string | yes | App kind: "simple" or "compose". |
+| `name` | string | yes | App name (container name for simple, project name for compose). |
+| `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
+| `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
+this app — set when the post-install probe detects that the
+upstream emits absolute root-path assets that path-prefix proxying
+can't route (haze-class apps). The WebUI hides the "Open" button
+when this is set and surfaces the text as a tooltip explaining
+why only the direct host-port link is offered. |
+| `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
+| `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
+privileges (caps, host devices, host namespaces, or bind mounts
+outside the standard sandbox). Surfaced as a badge in the WebUI. |
+
+### `AppContainer`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `container_id` | string | yes | Docker container ID (short). |
+| `image` | string | yes | Container image. |
+| `name` | string | yes | Service name (compose service or container name). |
+| `status` | string | yes | Container status. |
+
+### `AppEnv`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `is_image_default` | boolean | no | Set by `apps.config` when this entry's value matches the image's
+own `Config.Env` default for the same key — i.e. the user didn't
+set it explicitly, it just came along with the image. The WebUI
+greys these rows out in Edit and shows an "Override" button so
+the user sees what the image provides without being misled into
+thinking they own it. Always `false` when the WebUI submits env
+back to the engine (install/update) — the engine doesn't read
+this field for create_container; it's purely an Edit-side hint. |
+| `name` | string | yes |  |
+| `value` | string | yes |  |
+
+### `AppIngress`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `host_port` | integer | yes | Host port to proxy to. |
+| `name` | string | yes | App name. |
+| `path` | string | yes | URL path prefix (e.g. "/apps/plex/"). Always set; in subdomain
+mode it's purely informational (the WebUI prefers the
+`subdomain`-derived URL for the Open button) since the app
+answers at root under the configured hostname. |
+| `subdomain` | string | no | Fully-qualified hostname the app is served under when subdomain
+mode is on (e.g. `jellyfin.example.com`). When set, Caddy
+matches the route by `host` rather than path-prefix, and the
+app sees itself rooted at `/` — sidestepping the absolute-asset
+failure mode that #219's probe disables path-prefix ingress for. |
+
+### `AppPort`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `container_port` | integer | yes | Container port number. |
+| `host_port` | integer | no | Host port to map to (optional, auto-assigned if omitted). |
+| `name` | string | yes | Port name (e.g. "http", "webui"). |
+| `protocol` | string | no | Protocol: "TCP" or "UDP" (default: TCP). |
+
+### `AppStats`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `block_read_bytes` | integer | yes | Cumulative block-device bytes read (cgroup v2 io_service_bytes). |
+| `block_write_bytes` | integer | yes | Cumulative block-device bytes written. |
+| `cpu_percent` | number | yes | CPU percentage averaged over the Docker stats sample window
+(Docker stats CLI semantics — capped only by num-CPUs * 100). |
+| `memory_bytes` | integer | yes | Memory in use, with page cache / inactive-file subtracted to
+match `docker stats`. Sum across compose containers. |
+| `memory_limit_bytes` | integer | yes | Memory limit reported by cgroup. Equals total host memory when
+no explicit limit is set; the WebUI decides what to render when
+the value matches host memory. |
+| `name` | string | yes | App name. Matches the `name` of an entry in `apps.list`. |
+| `net_rx_bytes` | integer | yes | Total bytes received across all container interfaces. |
+| `net_tx_bytes` | integer | yes | Total bytes transmitted across all container interfaces. |
+
+### `AppVolume`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `host_path` | string | no | Host path (auto-generated under apps storage if empty). |
+| `mount_path` | string | yes | Mount path inside the container. |
+| `name` | string | yes | Volume name (e.g. "config", "data"). |
+
+### `BackupProfile`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `name` | string | yes |  |
+| `password` | string | yes |  |
+| `repo_initialized` | boolean | no |  |
+| `retention` | `RetentionPolicy` | no |  |
+| `schedule` | string | no |  |
+| `snapshot_before` | boolean | no |  |
+| `sources` | string[] | yes |  |
+| `target` | `BackupTarget` | yes |  |
+
+### `BackupRunResult`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bytes_added` | integer | no |  |
+| `duration_secs` | integer | yes |  |
+| `files_changed` | integer | no |  |
+| `files_new` | integer | no |  |
+| `message` | string | yes |  |
+| `success` | boolean | yes |  |
+| `timestamp` | string | yes |  |
+
+### `BackupSnapshot`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `hostname` | string | yes |  |
+| `id` | string | yes |  |
+| `paths` | string[] | yes |  |
+| `tags` | string[] | yes |  |
+| `time` | string | yes |  |
+
+### `BackupTarget`
+
+*(see schema)*
 
 ### `BlockDevice`
 
@@ -2509,6 +5937,53 @@ the master across the enslave step). |
 | `name` | string | yes |  |
 | `stp` | boolean | no | Enable Spanning Tree Protocol on the bridge. |
 
+### `CaddyRouteSummary`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `app_name` | string | no | App name when `source` is `engine-app`; `None` otherwise.
+Lets the WebUI link the row back to the Apps page. |
+| `cert` | `HostCert` \| null | no | On-disk certificate Caddy currently serves for this route's host.
+Populated by the engine binary after `list_all_route_summaries`
+returns — nasty-apps doesn't have access to the cert directory
+or PEM parser. `None` for non-host routes (`path` / `catch_all`)
+and for host routes whose cert isn't on disk yet — the engine
+pushes automation policies eagerly via `set_tls_automation` so
+issuance starts at policy-push time, not on first request, but
+DNS-01 + propagation_delay can take 30-90s before the cert
+lands. Use `system.tls.host_statuses` for the live state of
+each managed host (issuing / failed / active) with error
+details when issuance is stuck. |
+| `handler_kind` | string | yes | Dominant handler kind, in display order: `reverse_proxy`,
+`file_server`, `static_response`, `rewrite`, or `other`. The
+WebUI uses this to render a meaningful "handler" column for
+rows whose upstream is None. |
+| `match_kind` | string | yes | "host", "path", or "catch_all". The WebUI groups by this so the
+operator sees host-match (subdomain) routes separately from
+path-prefix routes. |
+| `match_value` | string | yes | Human-readable match value:
+- host_match: the hostname (`jellyfin.example.com`)
+- path_match: the first path glob (`/apps/haze/*`)
+- catch_all: `(any)` so the WebUI doesn't have to special-case
+  the empty string |
+| `server` | string | yes | Caddy server name (`srv0`, `srv1`, ...) so the WebUI can group
+by listener — the HTTP-to-HTTPS redirect lives on a different
+server and shouldn't be lumped in with the HTTPS routes. |
+| `source` | string | yes | `engine-app` when the route's `@id` carries the `nasty-app-`
+prefix (owned by AppsService::ingress_set); `static` for
+anything else (the Caddyfile-baked WebUI / API / WS routes). |
+| `upstream` | string | no | Reverse-proxy upstream (e.g. `127.0.0.1:4420`) when the route
+ends in a `reverse_proxy` handler. `None` for `file_server`,
+`static_response`, etc. — `handler_kind` carries that detail. |
+
+### `ChannelConfig`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `id` | string | yes |  |
+| `name` | string | yes |  |
+
 ### `CpuStats`
 
 | Field | Type | Required | Description |
@@ -2520,6 +5995,31 @@ the master across the enslave step). |
 | `load_15` | number | yes | 15-minute load average. |
 | `load_5` | number | yes | 5-minute load average. |
 | `temp_c` | integer | no | CPU package temperature in degrees Celsius (from hwmon). |
+
+### `CpuSummary`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `logical_cores` | integer | yes |  |
+| `max_mhz` | integer | no | Max advertised speed in MHz from `cpu MHz` (often 0 on idle
+systems; better signal than `lscpu --max`). |
+| `model` | string | no |  |
+| `physical_cores` | integer | yes |  |
+| `vendor` | string | no |  |
+
+### `DeviceId`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | 4-hex-digit device ID, e.g. `2204` (RTX 3080). Lowercase. |
+| `vendor` | string | yes | 4-hex-digit vendor ID, e.g. `10de` (NVIDIA). Lowercase. |
+
+### `DeviceMissing`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `parent_exists` | boolean | yes | True when the path's parent directory exists on the host. |
+| `path` | string | yes | The device path the caller asked about, echoed back. |
 
 ### `DeviceSpec`
 
@@ -2537,6 +6037,17 @@ the master across the enslave step). |
 | `path` | string | yes | Block device path. |
 | `total_bytes` | integer | yes | Total capacity of this device in bytes. |
 | `used_bytes` | integer | yes | Bytes currently used on this device. |
+
+### `DimmInfo`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `locator` | string | yes | Slot identifier from DMI Type 17 `Locator`, e.g. `DIMM_A1`. |
+| `manufacturer` | string | no |  |
+| `mem_type` | string | no | `DDR4`, `DDR5`, `LPDDR4`, etc. Empty/None when slot is empty. |
+| `part_number` | string | no |  |
+| `size_bytes` | integer | yes | Bytes; 0 means slot is empty. |
+| `speed_mts` | integer | no | MT/s rated speed. |
 
 ### `DiskHealth`
 
@@ -2566,6 +6077,26 @@ the master across the enslave step). |
 | `read_ios` | integer | yes | Cumulative read I/O operations completed since boot. |
 | `write_bytes` | integer | yes | Cumulative bytes written since boot. |
 | `write_ios` | integer | yes | Cumulative write I/O operations completed since boot. |
+
+### `DmiBios`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `release_date` | string | no |  |
+| `vendor` | string | no |  |
+| `version` | string | no |  |
+
+### `DmiSystem`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `manufacturer` | string | no |  |
+| `product` | string | no |  |
+| `version` | string | no |  |
+
+### `EnrollmentPhase`
+
+*(see schema)*
 
 ### `Filesystem`
 
@@ -2626,6 +6157,80 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `verbose` | boolean | no | Whether verbose mount logging is enabled. |
 | `version_upgrade` | string | no | Version upgrade behavior at mount: `compatible`, `incompatible`, or `none`. |
 
+### `FirewallRule`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `active` | boolean | yes |  |
+| `ports` | `PortSpec`[] | yes |  |
+| `service` | string | yes | Protocol/service name (e.g. "nfs", "ssh", "webui"). |
+
+### `FirmwareDevice`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device_id` | string | yes | Device ID (fwupd GUID). |
+| `name` | string | yes | Device name (e.g. "UEFI dbx", "WD Black SN850X"). |
+| `update_available` | boolean | yes | Whether an update is available. |
+| `update_description` | string | no | Update description/summary. |
+| `update_version` | string | no | Available update version (if any). |
+| `vendor` | string | yes | Vendor name. |
+| `version` | string | yes | Currently installed firmware version. |
+
+### `FsDependents`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `apps` | string[] | yes |  |
+| `backup_jobs` | string[] | yes |  |
+| `filesystem` | string | yes |  |
+| `iscsi_targets` | string[] | yes |  |
+| `mounted` | boolean | yes |  |
+| `nfs_shares` | string[] | yes |  |
+| `nvmeof_subsystems` | string[] | yes |  |
+| `smb_shares` | string[] | yes |  |
+| `subvolumes` | string[] | yes |  |
+| `vms` | string[] | yes |  |
+
+### `Generation`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `booted` | boolean | yes | Whether this is the generation the system booted into. |
+| `current` | boolean | yes | Whether this is the currently activated generation. |
+| `date` | string | yes | Build date (e.g. "2026-03-21 11:15:37"). |
+| `generation` | integer | yes | NixOS generation number. |
+| `kernel_version` | string | yes | Kernel version string. |
+| `label` | string | no | User-assigned label (e.g. "known good", "stable"). |
+| `nasty_version` | string | no | NASty version baked into this generation (from /etc/nasty-version). |
+| `nixos_version` | string | yes | NixOS version string (e.g. "26.05.20260318.b40629e"). |
+
+### `HostCert`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `expires` | string | no |  |
+| `expires_in_days` | integer | no | Days until expiry from now; negative = expired. Lets the WebUI
+colour the badge (red ≤ 7, amber ≤ 30, green otherwise) without
+parsing the RFC-2822 expires string client-side. |
+| `issued` | string | no |  |
+| `issuer` | string | no |  |
+| `path` | string | yes | On-disk path; surfaced as a tooltip in the WebUI for debugging
+"which cert is this actually serving" questions. |
+
+### `HostTlsStatus`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `expires` | string | no |  |
+| `expires_in_days` | integer | no |  |
+| `host` | string | yes |  |
+| `issued` | string | no |  |
+| `issuer` | string | no |  |
+| `message` | string | no | `active` ⇒ on-disk cert path. `failed` / `issuing` ⇒ last log
+line, verbatim. `pending` ⇒ None. |
+| `state` | string | yes |  |
+
 ### `InterfaceConfig`
 
 | Field | Type | Required | Description |
@@ -2635,6 +6240,13 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `ipv6` | `IpConfig` | no |  |
 | `mtu` | integer | no |  |
 | `name` | string | yes |  |
+
+### `IommuGroup`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `devices` | `PciDevice`[] | yes |  |
+| `id` | integer | yes |  |
 
 ### `IpConfig`
 
@@ -2670,6 +6282,14 @@ Enum: `dhcp`
 | `lun_id` | integer | yes |  |
 | `size_bytes` | integer | no |  |
 
+### `MappedPort`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `container_port` | integer | yes | Container port. |
+| `host_port` | integer | yes | Host port. |
+| `protocol` | string | yes | Protocol (tcp/udp). |
+
 ### `MemoryStats`
 
 | Field | Type | Required | Description |
@@ -2679,6 +6299,16 @@ Enum: `dhcp`
 | `swap_used_bytes` | integer | yes | Swap space currently in use. |
 | `total_bytes` | integer | yes | Total installed RAM in bytes. |
 | `used_bytes` | integer | yes | RAM currently in use (total minus available). |
+
+### `MemorySummary`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `dimms` | `DimmInfo`[] | yes |  |
+| `ecc` | boolean | yes | Whether the memory array supports ECC (single bit, multi-bit, or chipkill). |
+| `slots_total` | integer | yes | Total DIMM slots on the system (populated + empty). |
+| `slots_used` | integer | yes | Slots with a DIMM in them. |
+| `total_bytes` | integer | yes | Sum of all populated DIMM sizes in bytes. |
 
 ### `Namespace`
 
@@ -2701,6 +6331,14 @@ Enum: `dhcp`
 | `tx_packets` | integer | yes | Cumulative packets transmitted since boot. |
 | `up` | boolean | yes | Whether the interface's operstate is `up`. |
 
+### `NetworkPendingTxn`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `revert_at_unix` | integer | yes |  |
+| `risk_reason` | string | yes |  |
+| `txn_id` | string | yes |  |
+
 ### `NfsClient`
 
 | Field | Type | Required | Description |
@@ -2717,6 +6355,28 @@ Enum: `dhcp`
 | `enabled` | boolean | yes | Whether the share is currently active in `/etc/exports.d/nasty.exports`. |
 | `id` | string | yes | Unique share identifier (UUID). |
 | `path` | string | yes | Absolute filesystem path being exported (must be under `/fs/`). |
+
+### `NmDiffSummary`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `add` | integer | yes |  |
+| `delete` | integer | yes |  |
+| `unchanged` | integer | yes |  |
+| `update` | integer | yes |  |
+
+### `NmDiffUpdate`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `changed_sections` | string[] | yes | One line per differing top-level section (e.g. `"ipv4"`,
+`"bridge"`).  Cheap signal for the UI; the WebUI can render a
+richer diff if it wants by re-fetching settings. |
+| `id` | string | yes |  |
+
+### `NutMode`
+
+Enum: `local`, `remote`
 
 ### `NvmeofSubsystem`
 
@@ -2752,6 +6412,38 @@ Enum: `dhcp`
 | `role_mappings` | `OidcRoleMapping`[] | no | Group → role mappings. Evaluated in order; first match wins. |
 | `scopes` | string[] | no | OAuth scopes to request. Defaults to ["openid","profile","email","groups"]. |
 
+### `PassthroughDevice`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `address` | string | yes | PCI address (e.g. "0000:03:00.0"). |
+| `label` | string | no | Human-readable label (e.g. "NVIDIA RTX 3080"). |
+
+### `PciDevice`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bdf` | string | yes | Bus:Device.Function in canonical sysfs form, e.g. `0000:01:00.0`. |
+| `class_id` | string | yes | 4-hex-digit class code, e.g. `0300` (VGA controller). |
+| `class_name` | string | no | Human-readable class name (from pci.ids), if available. |
+| `device_id` | string | yes | 4-hex-digit device ID, e.g. `2204` (RTX 3080). |
+| `device_name` | string | no | Human-readable device name (from pci.ids), if available. |
+| `driver` | string | no | Currently bound kernel driver, e.g. `vfio-pci`, `nvidia`,
+`e1000e`. `None` if no driver is bound (rare — usually means
+the device is reserved for explicit binding). |
+| `vendor_id` | string | yes | 4-hex-digit vendor ID, e.g. `10de` (NVIDIA). |
+| `vendor_name` | string | no | Human-readable vendor name (from pci.ids), if available. |
+
+### `PciDevice2`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `address` | string | yes | PCI address (e.g. "0000:03:00.0"). |
+| `bound_to_vfio` | boolean | yes | Whether the device is currently bound to vfio-pci. |
+| `description` | string | yes | Human-readable description from lspci. |
+| `iommu_group` | integer | yes | IOMMU group number. |
+| `vendor_device` | string | yes | Vendor:device ID (e.g. "10de:2206"). |
+
 ### `Port`
 
 | Field | Type | Required | Description |
@@ -2761,6 +6453,22 @@ Enum: `dhcp`
 | `port_id` | integer | yes | nvmet configfs port ID (unique across all subsystems on this host). |
 | `service_id` | string | yes | TCP/RDMA port number as a string (default NVMe-oF port is `4420`). |
 | `transport` | string | yes | Transport type (e.g. `tcp`, `rdma`). |
+
+### `PortConflict`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `port` | integer | yes | The port that has a conflict. |
+| `used_by` | string | yes | What is using this port (e.g. "caddy", "app:plex"). |
+
+### `PortSpec`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `iface` | string | no | Optional interface restriction (e.g. "tailscale0"). |
+| `port` | integer | yes |  |
+| `source` | string | no | Optional source IP/CIDR restriction (e.g. "192.168.1.0/24"). |
+| `transport` | `Transport` | yes |  |
 
 ### `Portal`
 
@@ -2779,13 +6487,65 @@ Enum: `dhcp`
 | `running` | boolean | yes | Whether the protocol's systemd service is currently active. |
 | `system_service` | boolean | yes | Whether this is a system-level service (SSH, Avahi, SMART) rather than a storage protocol. |
 
+### `RebuildSnapshot`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `exit_code` | integer | no | Exit code from the last finished run, if any. Useful for
+the failed-rebuild error toast. |
+| `journal_tail` | string[] | yes | Tail of the unit's journal (last ~20 lines), surfaced
+verbatim in the wizard's "rebuild output" expandable.
+Empty when the unit was never started, or when journalctl
+failed (we log + skip rather than abort the status call). |
+| `status` | `RebuildStatus` | yes | `running` / `succeeded` / `failed` / `not_run`. Last
+transition is also visible on the wizard's polled UI. |
+
+### `RebuildStatus`
+
+*(see schema)*
+
 ### `ReleaseChannel`
 
 *(see schema)*
 
+### `RetentionPolicy`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `keep_daily` | integer | no |  |
+| `keep_last` | integer | no |  |
+| `keep_monthly` | integer | no |  |
+| `keep_weekly` | integer | no |  |
+| `keep_yearly` | integer | no |  |
+
 ### `Role`
 
-Enum: `admin`, `readonly`, `operator`
+Enum: `admin`
+
+### `SecureBootStatus`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | no | `Some(true)` iff `bootctl status` reports `Secure Boot: enabled`.
+`Some(false)` for `disabled` (any parenthetical). `None` when we
+couldn't determine state — see `note`. |
+| `measured_uki` | boolean | no | `Some(true)` when bootctl reports `Measured UKI: yes` — kernel
+and initrd are loaded as a measured Unified Kernel Image.
+Useful signal for the future lanzaboote integration where SB
+and measured boot together strengthen the PCR-7 seal. |
+| `note` | string | no | Free-form one-line reason when we couldn't determine the
+state ("bootctl unavailable: …", "bootctl status returned no
+System: block", etc.). Surfaced under the Hardware card's
+status pill. |
+| `setup_mode` | boolean | no | UEFI Setup Mode — when true the firmware accepts arbitrary key
+enrollment without PK signing. Sourced from the `(setup)`
+parenthetical on the `Secure Boot:` line. |
+| `unsupported` | boolean | no | `Some(true)` when bootctl reports `disabled (unsupported)` —
+the firmware lacks SB support entirely (e.g. OVMF without the
+SB build option, common on default QEMU). Distinct from a
+firmware that supports SB but has it switched off, so the
+WebUI can show "Unsupported" instead of nudging the operator
+to enable a feature they can't. |
 
 ### `ServiceStatus`
 
@@ -2810,6 +6570,14 @@ Enum: `admin`, `readonly`, `operator`
 | `value` | integer | yes | Normalized current value (higher is better for most attributes). |
 | `worst` | integer | yes | Worst normalized value ever recorded. |
 
+### `SmbGroup`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `gid` | integer | yes | Unix GID. |
+| `members` | string[] | yes | Group members (usernames). |
+| `name` | string | yes | Linux group name. |
+
 ### `SmbShare`
 
 | Field | Type | Required | Description |
@@ -2825,6 +6593,13 @@ Enum: `admin`, `readonly`, `operator`
 | `read_only` | boolean | yes | Whether the share is read-only. |
 | `valid_users` | string[] | yes | Usernames allowed to connect (empty means no restriction beyond authentication). |
 
+### `SmbUser`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `uid` | integer | yes | Unix UID. |
+| `username` | string | yes | Linux username. |
+
 ### `Snapshot`
 
 | Field | Type | Required | Description |
@@ -2836,6 +6611,16 @@ Enum: `admin`, `readonly`, `operator`
 | `path` | string | yes | Absolute filesystem path to the snapshot directory. |
 | `read_only` | boolean | yes | Whether this snapshot is read-only. |
 | `subvolume` | string | yes | Name of the parent subvolume. |
+
+### `SubPathRecipe`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `display_name` | string | yes | Short label shown next to the "Apply" button (e.g. "Grafana
+sub-path mode"). Not the env var key — purely human-readable. |
+| `env` | `AppEnv`[] | yes | Env vars to add to the install form when the user applies this
+recipe. Values may contain `{name}`, `{host}`, `{scheme}` —
+see template note above. |
 
 ### `Subvolume`
 
@@ -2867,6 +6652,21 @@ always-track change. For block subvolumes, comes from the
 backing image's allocated size. |
 | `volsize_bytes` | integer | no | Size of the backing sparse image in bytes (block subvolumes only). |
 
+### `SubvolumeDependents`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `apps` | string[] | yes |  |
+| `backup_jobs` | string[] | yes |  |
+| `filesystem` | string | yes |  |
+| `iscsi_targets` | string[] | yes |  |
+| `name` | string | yes |  |
+| `nfs_shares` | string[] | yes |  |
+| `nvmeof_subsystems` | string[] | yes |  |
+| `path` | string | yes |  |
+| `smb_shares` | string[] | yes |  |
+| `vms` | string[] | yes |  |
+
 ### `SubvolumeType`
 
 Enum: `filesystem`, `block`
@@ -2875,12 +6675,67 @@ Enum: `filesystem`, `block`
 
 Enum: `celsius`, `fahrenheit`
 
+### `TpmInfo`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `manufacturer` | string | no | 4-character ASCII manufacturer code reported by the chip via
+`TPM2_PT_MANUFACTURER` — `IFX` (Infineon), `STM`
+(STMicroelectronics), `NTC` (Nuvoton), `IBM ` (swtpm), `AMD`
+(fTPM), etc. Queried via `tpm2_getcap` since sysfs doesn't
+expose it on most kernel drivers (an empirically-discovered
+gap — swtpm and many real TPM drivers publish only
+`tpm_version_major`). |
+| `rm_available` | boolean | yes | `/dev/tpmrm0` is the resource-manager interface tpm2-tools and
+any sealing code actually talks to. Present on TPM 2.0 systems
+with the in-kernel resource manager enabled (default on every
+modern kernel). When false, the chip exists but the sealing
+path will fail at the device-open step. |
+| `vendor_string` | string | no | Vendor's marketing model string, also from `tpm2_getcap` —
+assembled from `TPM2_PT_VENDOR_STRING_1..4`. E.g. `"SLB9665"`
+for an Infineon chip, `"SW   TPM"` for swtpm. Empty / None
+when the chip doesn't publish a vendor string or the query
+fails. |
+| `version_major` | integer | no | `1` for TPM 1.2 (incompatible with the planned sealing flow),
+`2` for TPM 2.0. Read from `tpm_version_major`. |
+
+### `Transport`
+
+Enum: `tcp`, `udp`
+
+### `UsbDevice`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bus` | integer | yes | Bus number from `lsusb` (decimal). |
+| `description` | string | yes | Single-line "Vendor Name Product Name" rendered by lsusb. The
+embedded `pci.ids`/`usb.ids` lookup is lsusb's job, not ours. |
+| `device` | integer | yes | Device address on the bus. |
+| `product_id` | string | yes | 4-hex-digit product ID. |
+| `vendor_id` | string | yes | 4-hex-digit vendor ID. |
+
+### `UsbPassthrough`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `label` | string | no | Human-readable label preserved for the UI (e.g. "Realtek
+Bluetooth dongle"). The kernel can't tell us this — it comes
+from the original `lsusb` listing the user picked from. |
+| `product_id` | string | yes | 4-hex-digit USB product ID. |
+| `vendor_id` | string | yes | 4-hex-digit USB vendor ID (e.g. "0bda"). Stored lowercase
+without the `0x` prefix to match `lsusb` formatting. |
+
 ### `UserInfo`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `role` | `Role` | yes | Role assigned to this user. |
-| `username` | string | yes | Login username. |
+| `role` | `Role` | yes |  |
+| `username` | string | yes |  |
+| `webauthn_credential_count` | integer | no | How many WebAuthn credentials are registered to this user.
+Drives the admin "Reset security keys" affordance on the
+/users page — admins only see the button on rows where
+there are credentials to reset, instead of a no-op button
+on every row. |
 
 ### `VersionInputInfo`
 
@@ -2914,4 +6769,96 @@ doesn't carry an `original` block for). |
 | `mtu` | integer | no |  |
 | `parent` | string | yes |  |
 | `vlan_id` | integer | yes |  |
+
+### `VmDisk`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `aio` | string | no | I/O mode: "threads" (default), "native" (requires cache=none). |
+| `cache` | string | no | Cache mode: "writeback" (default), "writethrough", "none", "unsafe". |
+| `discard` | string | no | Discard/TRIM support: "unmap" or "ignore" (default). |
+| `interface` | string | no | Disk interface: "virtio" (default), "scsi", "ide". |
+| `iops_rd` | integer | no | I/O throttling: max read IOPS (0 = unlimited). |
+| `iops_wr` | integer | no | I/O throttling: max write IOPS (0 = unlimited). |
+| `path` | string | yes | Disk path — block device (/dev/loopX) or image file. |
+| `readonly` | boolean | no | Whether this is a read-only disk. |
+
+### `VmDiskSubvolume`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | Block device path. |
+| `filesystem` | string | yes | Filesystem name. |
+| `subvolume` | string | yes | Subvolume name. |
+
+### `VmNetwork`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bridge` | string | no | Bridge name (for bridge mode, e.g. "br0"). |
+| `mac` | string | no | MAC address (auto-generated if omitted). |
+| `mode` | string | no | Network mode: "bridge" or "user" (NAT). |
+
+### `VmStatus`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `autostart` | boolean | no | Whether the VM should auto-start on NASty boot. |
+| `boot_iso` | string | no | Legacy single-ISO field, kept for cross-version state-file
+compatibility. On load we migrate this into `cdroms` if
+`cdroms` is empty; on save we mirror `cdroms.first()` back
+into here so a hypothetical rollback to a pre-`cdroms` engine
+still sees the boot ISO. New code reads `cdroms` exclusively. |
+| `boot_order` | string | no | Boot order: "disk", "cdrom", or "network". |
+| `cdroms` | string[] | no | ISO files to attach as CD-ROM devices. The first entry is the
+one QEMU treats as the boot CD when `boot_order = "cdrom"`;
+additional entries show up as extra read-only CDs inside the
+guest (typical use: Windows 11 install needs the Win11 ISO
+alongside the virtio-win driver ISO so the installer can see
+the virtio storage controller — issue #285). |
+| `cpu_model` | string | no | CPU model: "host" (default), "max", "qemu64", etc. |
+| `cpus` | integer | yes | Number of virtual CPU cores. |
+| `description` | string | no | Optional description. |
+| `disks` | `VmDisk`[] | yes | Boot disk configuration. |
+| `extra_args` | string[] | no | Extra raw QEMU arguments for advanced users. |
+| `id` | string | yes | Unique VM identifier (UUID). |
+| `machine_type` | string | no | Machine type: "q35" (default for x86), "i440fx". |
+| `memory_mib` | integer | yes | RAM in MiB. |
+| `name` | string | yes | Human-readable name. |
+| `networks` | `VmNetwork`[] | yes | Network interfaces. |
+| `passthrough_devices` | `PassthroughDevice`[] | yes | PCI devices to pass through via VFIO. |
+| `pid` | integer | no | QEMU process PID (if running). |
+| `running` | boolean | yes | Whether the VM is currently running. |
+| `uefi` | boolean | no | Whether to use UEFI boot (default: true). |
+| `usb_devices` | `UsbPassthrough`[] | no | USB devices to pass through. Identified by vendor/product ID
+rather than bus/addr because USB enumeration order shuffles
+across reboots; pinning to IDs is the stable choice. Caveat:
+all devices matching a (vendor, product) pair attach, so
+plugging in two identical keyboards passes both through. |
+| `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
+| `vnc_port` | integer | no | VNC display port (if running, for console access). |
+
+### `VolumeMismatch`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `current_gid` | integer | no |  |
+| `current_uid` | integer | no | Owner UID on the host. None when the path doesn't exist yet. |
+| `exists` | boolean | yes | True when the source path exists on the host. False = the
+directory will be created by the deploy pipeline; we'll chown
+it to expected at create time, so it's informational rather
+than an error. |
+| `expected_gid` | integer | no |  |
+| `expected_uid` | integer | yes |  |
+| `filesystem_missing` | boolean | no | True when the path is `/fs/<X>/…` and `<X>` is not a mounted
+filesystem. Distinct from `!exists` because pre-create would
+`mkdir -p` it on rootfs — a hard error the user must fix in
+their compose, not a "we'll create it for you" hint. |
+| `host_path` | string | yes |  |
+| `line` | integer | no | 1-based line number of the volume entry in the compose file
+(for editor underlining). Best-effort: we substring-match the
+host path against the source; ambiguous duplicates resolve to
+the first occurrence. |
+| `mount_path` | string | yes |  |
+| `service` | string | yes |  |
 
