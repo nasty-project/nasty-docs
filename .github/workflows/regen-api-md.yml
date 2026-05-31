@@ -4,10 +4,15 @@
 # was generated from. After it moved here in 2026-03 the regeneration
 # pipeline didn't come with it, so the file went stale.
 #
-# This workflow checks out the nasty repo's `main`, runs
-# `cargo run -p nasty-apidoc` (which walks every `JsonSchema`-derived
-# type and emits the markdown), copies the result on top of this
-# repo's `api.md`, and commits if anything changed.
+# This workflow checks out the nasty repo's `main`, runs the engine
+# binary in its `--dump-docs` CLI mode (which walks every
+# `JsonSchema`-derived type and emits the markdown), copies the result
+# on top of this repo's `api.md`, and commits if anything changed.
+#
+# The generator was a standalone `nasty-apidoc` binary until
+# nasty PR #350; that crate was deleted and its responsibility folded
+# into `nasty-engine --dump-docs` so the registry and the dispatcher
+# live in the same crate and stop drifting.
 #
 # Up to ~24h lag behind the engine's RPC surface — fine for an API
 # reference, and avoids the cross-repo PAT setup the on-every-push
@@ -43,8 +48,10 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       # 2. Check the source repo (nasty) out into a sibling dir. The
-      #    nasty-apidoc binary writes to `<workspace>/docs/api.md`
-      #    relative to `engine/Cargo.toml`, so we capture from there.
+      #    engine's --dump-docs mode writes `api.md` (and `openapi.json`)
+      #    into whatever directory we point it at; we pick `nasty/docs/`
+      #    to match the historical location the standalone apidoc
+      #    binary used.
       - name: Checkout nasty
         uses: actions/checkout@v5
         with:
@@ -59,8 +66,9 @@ jobs:
         uses: dtolnay/rust-toolchain@1.95.0
 
       # 4. Cache cargo artifacts across runs so this stays a 1-2 min
-      #    job in steady state. Cold cache is ~10 min; cache hit is
-      #    a couple of minutes for the build + the apidoc run itself.
+      #    job in steady state. Cold cache is now ~15 min (was ~10 with
+      #    apidoc; the engine binary is heavier — Axum, schemars, the
+      #    whole router workspace); cache hit stays a couple of minutes.
       - name: Cargo cache
         uses: Swatinem/rust-cache@v2
         with:
@@ -68,7 +76,10 @@ jobs:
 
       - name: Generate api.md
         working-directory: nasty/engine
-        run: cargo run --release -p nasty-apidoc
+        # `--dump-docs <dir>` writes `api.md` + `openapi.json` into
+        # `<dir>`. We only consume the markdown here; the OpenAPI spec
+        # is served live by the running engine at /api/openapi.json.
+        run: cargo run --release -p nasty-engine -- --dump-docs ../docs
 
       - name: Copy generated api.md
         run: cp nasty/docs/api.md api.md
