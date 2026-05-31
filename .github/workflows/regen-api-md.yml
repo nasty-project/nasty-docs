@@ -6,8 +6,14 @@
 #
 # This workflow checks out the nasty repo's `main`, runs the engine
 # binary in its `--dump-docs` CLI mode (which walks every
-# `JsonSchema`-derived type and emits the markdown), copies the result
-# on top of this repo's `api.md`, and commits if anything changed.
+# `JsonSchema`-derived type and emits the markdown + openapi.json), then:
+#
+#   1. Copies api.md on top of this repo's api.md and commits if changed.
+#   2. Bundles openapi.json + the vendored Swagger UI assets from the
+#      nasty repo into a tiny static site and deploys it to Cloudflare
+#      Pages (nasty-api.pages.dev). Same UX the engine serves at
+#      /api/docs on a real box, but published publicly so users can
+#      browse the API surface without installing anything.
 #
 # The generator was a standalone `nasty-apidoc` binary until
 # nasty PR #350; that crate was deleted and its responsibility folded
@@ -102,3 +108,58 @@ jobs:
           git add api.md
           git commit -m "api.md: regenerate from nasty@${NASTY_SHA}"
           git push
+
+      # 6. Bundle the static Swagger UI site and push it to
+      #    Cloudflare Pages (nasty-api.pages.dev).
+      #
+      #    Same shape as the /api/docs page the engine serves on a real
+      #    box: a tiny index.html mounting SwaggerUIBundle against an
+      #    openapi.json sibling, plus the vendored swagger-ui assets
+      #    from nasty/vendor/swagger-ui/ (pinned upstream in the nasty
+      #    repo — bumping the version there propagates here on the next
+      #    nightly).
+      #
+      #    `persistAuthorization` is intentionally omitted (it lives on
+      #    the engine's /api/docs because there's a real session cookie
+      #    in scope; there's no engine to authenticate against from a
+      #    public CDN page).
+      - name: Bundle static site
+        run: |
+          mkdir -p site
+          cp nasty/docs/openapi.json site/openapi.json
+          cp nasty/vendor/swagger-ui/swagger-ui.css site/
+          cp nasty/vendor/swagger-ui/swagger-ui-bundle.js site/
+          cat > site/index.html <<'HTML'
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+              <meta charset="UTF-8">
+              <title>NASty API</title>
+              <link rel="stylesheet" href="./swagger-ui.css">
+              <style>body { margin: 0; background: #fafbfc; }</style>
+          </head>
+          <body>
+              <div id="swagger-ui"></div>
+              <script src="./swagger-ui-bundle.js"></script>
+              <script>
+                  window.onload = () => {
+                      window.ui = SwaggerUIBundle({
+                          url: './openapi.json',
+                          dom_id: '#swagger-ui',
+                          deepLinking: true
+                      });
+                  };
+              </script>
+          </body>
+          </html>
+          HTML
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # `--branch=main` flags this as a production deployment so the
+          # nasty-api.pages.dev apex points at it; without it, each push
+          # would land on a preview URL only.
+          command: pages deploy site --project-name=nasty-api --branch=main
