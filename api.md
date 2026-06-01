@@ -6054,7 +6054,7 @@ systems; better signal than `lscpu --max`). |
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `ata_port` | string | no | ATA/SATA port identifier (e.g. `ata5`), if available. |
-| `attributes` | `SmartAttribute`[] | yes | ATA SMART attribute table (may be empty for NVMe drives). |
+| `attributes` | `SmartAttribute`[] | yes | ATA SMART attribute table (empty for NVMe and SAS drives). |
 | `capacity_bytes` | integer | yes | Total drive capacity in bytes. |
 | `controller_name` | string | no | Human-readable controller name (e.g. `ASMedia ASM1166`). |
 | `controller_pci` | string | no | PCI address of the SATA/NVMe controller (e.g. `03:00.0`). |
@@ -6062,10 +6062,17 @@ systems; better signal than `lscpu --max`). |
 | `firmware` | string | yes | Drive firmware version string. |
 | `health_passed` | boolean | yes | Whether the SMART overall-health self-assessment test passed. |
 | `model` | string | yes | Drive model name reported by SMART. |
+| `nvme` | `NvmeHealth` \| null | no | NVMe SMART health information log (`Some` only on NVMe drives). |
 | `power_on_hours` | integer | no | Accumulated powered-on time in hours. |
 | `serial` | string | yes | Drive serial number. |
 | `smart_status` | string | yes | Human-readable SMART health status (`PASSED` or `FAILED`). |
 | `temperature_c` | integer | no | Current drive temperature in degrees Celsius. |
+| `transport` | string | no | smartctl transport flag used to reach this drive, e.g.
+`megaraid,0`, `sat+megaraid,2`, `areca,3`. `None` for drives
+reachable via smartctl's default transport (direct-attach
+SATA/NVMe). The pair `(device, transport)` uniquely identifies a
+physical drive — multiple drives behind a RAID controller share
+the same block device path but have distinct transport flags. |
 
 ### `DiskIoStats`
 
@@ -6377,6 +6384,45 @@ richer diff if it wants by re-fetching settings. |
 ### `NutMode`
 
 Enum: `local`, `remote`
+
+### `NvmeHealth`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `available_spare_percent` | integer | yes | Remaining spare blocks as a percentage of the initial reserve.
+Decreases as the drive remaps failed NAND cells. |
+| `available_spare_threshold_percent` | integer | yes | Vendor-set threshold (typically 10%, sometimes higher) below which
+`available_spare_percent` triggers the spare-low critical warning. |
+| `controller_busy_minutes` | integer | yes | Controller busy time in minutes. |
+| `critical_comp_minutes` | integer | yes | Cumulative minutes the controller spent above the critical
+temperature threshold. |
+| `critical_warning` | integer | yes | Critical-warning bit field. `0` is healthy; non-zero bits flag
+spare-below-threshold (0x1), temperature (0x2), reliability (0x4),
+read-only (0x8), volatile-backup-failed (0x10), persistent-memory-
+region-RO (0x20). |
+| `data_units_read` | integer | yes | Read volume reported in NVMe "data units" (1 unit = 1000 × 512-byte
+LBAs = 512,000 bytes per spec). UI multiplies for human-readable
+totals. |
+| `data_units_written` | integer | yes | Write volume in NVMe data units (see `data_units_read`). |
+| `host_reads` | integer | yes | Total host read commands issued to the controller. |
+| `host_writes` | integer | yes | Total host write commands issued to the controller. |
+| `media_errors` | integer | yes | Media and data integrity errors detected by the controller. |
+| `most_recent_error` | string | no | Human-readable status string of the most recent entry in the
+error information log table, when smartctl returned one. The
+table itself is only emitted by smartctl 7.4+; older versions
+give just the count above with no way to see what the errors
+actually were. `None` when the log is empty or unavailable. |
+| `num_err_log_entries` | integer | yes | Number of entries in the controller error information log. |
+| `percentage_used` | integer | yes | Endurance estimate: 0 = new, 100 = nominal end of life. May exceed
+100 on drives operated past their rated DWPD. Not a hard limit. |
+| `power_cycles` | integer | yes | Number of power cycles. |
+| `temperature_sensors_c` | integer[] | yes | Per-zone temperatures in degrees Celsius. Some drives only wire up
+a subset of sensors and report `null` for the rest (e.g. Kingston
+SNV3S reports `[null, 43]`). |
+| `unsafe_shutdowns` | integer | yes | Number of unclean shutdowns (drive lost power without a graceful
+shutdown notify). |
+| `warning_temp_minutes` | integer | yes | Cumulative minutes the controller spent above the warning
+temperature threshold. |
 
 ### `NvmeofSubsystem`
 
