@@ -5832,6 +5832,26 @@ the value matches host memory. |
 | `mount_path` | string | yes | Mount path inside the container. |
 | `name` | string | yes | Volume name (e.g. "config", "data"). |
 
+### `AtaHealth`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `endurance_used_percent` | integer | no | Endurance consumed as a percentage: 0 = new, 100 = nominal end
+of life. Mirrors `NvmeHealth::percentage_used` so the ATA panel
+can show wear next to the link-speed tile in the same way the
+NVMe panel does. Sourced from smartctl 7.5+'s top-level
+`endurance_used.current_percent`, which smartctl computes from
+each drive's Media Wearout Indicator attribute (id varies per
+vendor; smartctl knows the encoding so we don't have to).
+`None` on drives that don't report wear: spinners, very old
+SSDs without Media_Wearout_Indicator, and any drive seen
+through a smartctl earlier than 7.5. |
+| `interface_speed_current` | string | no | Currently-negotiated SATA link speed string as smartctl reports
+it (e.g. `"6.0 Gb/s"`, `"3.0 Gb/s"`). When this is below
+`interface_speed_max` the link has trained down — often a cable,
+backplane, or controller-port problem worth investigating. |
+| `interface_speed_max` | string | no | Maximum link speed the drive can negotiate. |
+
 ### `BackupProfile`
 
 | Field | Type | Required | Description |
@@ -6053,6 +6073,10 @@ systems; better signal than `lscpu --max`). |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `ata` | `AtaHealth` \| null | no | ATA / SATA-specific summary fields not captured by the generic
+attribute table. `Some` only on ATA drives that smartctl could
+query natively (drives reached via `sat+megaraid` and other
+pass-throughs typically leave `interface_speed` unpopulated). |
 | `ata_port` | string | no | ATA/SATA port identifier (e.g. `ata5`), if available. |
 | `attributes` | `SmartAttribute`[] | yes | ATA SMART attribute table (empty for NVMe and SAS drives). |
 | `capacity_bytes` | integer | yes | Total drive capacity in bytes. |
@@ -6063,7 +6087,14 @@ systems; better signal than `lscpu --max`). |
 | `health_passed` | boolean | yes | Whether the SMART overall-health self-assessment test passed. |
 | `model` | string | yes | Drive model name reported by SMART. |
 | `nvme` | `NvmeHealth` \| null | no | NVMe SMART health information log (`Some` only on NVMe drives). |
+| `pcie_link` | `PcieLink` \| null | no | PCIe link state for the controller. Carried per-disk for
+schema simplicity (every drive on the same controller carries
+the same value); the WebUI dedupes via its existing
+controller-grouping logic in the Topology view. `None` for
+non-PCIe-attached drives (USB bridges, virtio in VMs). |
 | `power_on_hours` | integer | no | Accumulated powered-on time in hours. |
+| `scsi` | `ScsiHealth` \| null | no | SCSI / SAS health information (`Some` only on SAS / SCSI drives,
+including SAS drives reached via `-d megaraid,N`). |
 | `serial` | string | yes | Drive serial number. |
 | `smart_status` | string | yes | Human-readable SMART health status (`PASSED` or `FAILED`). |
 | `temperature_c` | integer | no | Current drive temperature in degrees Celsius. |
@@ -6490,6 +6521,15 @@ the device is reserved for explicit binding). |
 | `iommu_group` | integer | yes | IOMMU group number. |
 | `vendor_device` | string | yes | Vendor:device ID (e.g. "10de:2206"). |
 
+### `PcieLink`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `current_speed` | string | yes | Negotiated link speed (e.g. `"8.0 GT/s PCIe"` for PCIe 3.0). |
+| `current_width` | integer | yes | Currently active lane count (1, 2, 4, 8, 16, …). |
+| `max_speed` | string | yes | Maximum link speed the device + slot can negotiate. |
+| `max_width` | integer | yes | Maximum lane count the device + slot supports. |
+
 ### `Port`
 
 | Field | Type | Required | Description |
@@ -6567,6 +6607,76 @@ transition is also visible on the wizard's polled UI. |
 ### `Role`
 
 Enum: `admin`
+
+### `ScsiErrorCounters`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `corrected_total` | integer | yes | Errors the drive recovered from automatically (ECC, rereads,
+rewrites). Informational — large values are normal on long-lived
+drives and don't indicate failure. |
+| `gigabytes_processed` | number | yes | I/O volume in gigabytes processed since the counter was last
+reset (typically since drive format). Lets the UI show error
+rates as "N errors per TB" instead of raw counts. |
+| `uncorrected_total` | integer | yes | **Uncorrected errors are the failure signal.** Any non-zero
+value on the write or verify counter means the drive has lost
+or returned bad data. Even small counts warrant replacement
+planning — they don't decrease, and the rate tends to accelerate. |
+
+### `ScsiHealth`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `drive_trip_temp_c` | integer | no | Drive-trip temperature in °C — the controller's hard shutdown
+threshold. Useful context next to `temperature_c` so operators
+see how much headroom they have before the drive bails out. |
+| `form_factor` | string | no | Drive form factor as smartctl reports it (e.g. `"3.5 inches"`,
+`"2.5 inches"`). |
+| `grown_defect_list` | integer | no | Number of sectors moved to spare blocks since manufacture
+(SCSI Log Page 3 — Read Defect Data, grown defect list count).
+Non-zero means the drive has had to remap failing sectors; the
+rate of growth matters more than the absolute number. |
+| `last_self_test` | `ScsiSelfTestEntry` \| null | no | Most recent entry from the rolling SCSI self-test log (Log Page
+0x10). `None` when no tests have been recorded. |
+| `load_unload_cycles` | integer | no | Load/unload cycles accumulated vs the drive's design lifetime.
+SAS drives self-park heads on idle so this typically grows much
+faster than start/stop cycles. |
+| `load_unload_cycles_designed` | integer | no |  |
+| `logical_unit_id` | string | no | World-Wide Name / Logical Unit Identifier (hex string). |
+| `power_on_minutes_since_format` | integer | no | Accumulated power-on minutes since the last format. Distinct
+from `power_on_hours` which counts since manufacture. The gap
+between the two shows pre-deployment burn-in time. |
+| `read_errors` | `ScsiErrorCounters` | yes | Per-I/O-type error counts from SCSI Log Page 2/3/5. |
+| `rotation_rate` | integer | no | Rotation rate in RPM. `0` = SSD; typical SAS spinner values are
+7200, 10500 / 10033, 15000. |
+| `scsi_version` | string | no | SCSI standard version (e.g. `"SPC-3"`, `"SPC-4"`). |
+| `self_test_count` | integer | yes | Number of completed self-test entries in the rolling log
+(smartctl numbers them `scsi_self_test_0` ‥ `scsi_self_test_19`). |
+| `start_stop_cycles` | integer | no | Start/stop cycles accumulated vs the drive's design lifetime. |
+| `start_stop_cycles_designed` | integer | no |  |
+| `transport_protocol` | string | no | Transport protocol description (e.g. `"SAS (SPL-4)"`,
+`"SAS (SPL-3)"`, `"Fibre Channel"`). |
+| `verify_errors` | `ScsiErrorCounters` | yes |  |
+| `week_of_manufacture` | string | no | Week of manufacture within that year (`"01"` – `"52"`). |
+| `write_errors` | `ScsiErrorCounters` | yes |  |
+| `year_of_manufacture` | string | no | Year of manufacture (e.g. `"2019"`). |
+
+### `ScsiSelfTestEntry`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `code` | string | yes | Test type — e.g. `"Background long"`, `"Background short"`,
+`"Foreground long"`. |
+| `in_progress` | boolean | yes | True if smartctl reports a self-test is currently running. Only
+ever set on the most-recent entry. |
+| `passed` | boolean | yes | Whether this entry represents a healthy outcome. True when the
+drive reported the test as successfully completed; false when
+it aborted, failed, or is still in progress. |
+| `power_on_hours` | integer | no | Drive's accumulated power-on hours when the test ran. Lets the
+UI render "X hours ago" relative to the drive's current
+`power_on_hours`. |
+| `result` | string | yes | Result string — e.g. `"Completed"`, `"Aborted (device reset ?)"`,
+`"Self test in progress ..."`, `"Read element of test failed"`. |
 
 ### `SecureBootStatus`
 
