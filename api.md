@@ -2333,6 +2333,62 @@ Remove an iSCSI initiator ACL.
 | `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
 
 
+### `share.iscsi.add_portal`
+
+Add a listening portal (IP:port) to an iSCSI target. Use 0.0.0.0 for all IPv4 interfaces, :: for all IPv6 interfaces, or a specific host address.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ip` | string | yes | Listening IP address. `0.0.0.0` for all v4 interfaces, `::` for
+all v6 interfaces, or a specific host address. |
+| `port` | integer | yes | TCP port to listen on. Standard iSCSI port is 3260. |
+| `target_id` | string | yes | ID of the target to add the portal to. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `acls` | `Acl`[] | yes | Initiator ACL entries controlling which hosts may connect. |
+| `alias` | string | no | Optional human-readable alias for the target. |
+| `enabled` | boolean | yes | Whether the target is currently active in LIO. |
+| `id` | string | yes | Unique target identifier (UUID). |
+| `iqn` | string | yes | iSCSI Qualified Name (e.g. `iqn.2137-04.storage.nasty:tank-vol`). |
+| `luns` | `Lun`[] | yes | Logical units exposed by this target. |
+| `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
+
+
+### `share.iscsi.remove_portal`
+
+Remove a listening portal from an iSCSI target. The last portal cannot be removed; add a replacement first.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ip` | string | yes | Listen address of the portal to remove. Must match the stored
+value exactly (no normalization). |
+| `port` | integer | yes | TCP port of the portal to remove. |
+| `target_id` | string | yes | ID of the target from which to remove the portal. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `acls` | `Acl`[] | yes | Initiator ACL entries controlling which hosts may connect. |
+| `alias` | string | no | Optional human-readable alias for the target. |
+| `enabled` | boolean | yes | Whether the target is currently active in LIO. |
+| `id` | string | yes | Unique target identifier (UUID). |
+| `iqn` | string | yes | iSCSI Qualified Name (e.g. `iqn.2137-04.storage.nasty:tank-vol`). |
+| `luns` | `Lun`[] | yes | Logical units exposed by this target. |
+| `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
+
+
 ## NVMe-oF Subsystems
 
 ### `share.nvmeof.list`
