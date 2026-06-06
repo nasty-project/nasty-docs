@@ -3756,6 +3756,40 @@ Set the rest-server storage path, auto-creating a subvolume under `/fs/<name>/..
 | `path` | string | yes | Absolute filesystem path for restic REST API storage. |
 
 
+### `service.rest_server.credentials`
+
+Return the basic-auth username + password the rest-server requires. Source-side backup profiles need these in their target URL as `https://<user>:<password>@<host>:8000/`. Credentials are generated lazily on first call and persisted (password sealed via systemd-creds). Operators who lose track can re-read this RPC at any time.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `password` | string | yes |  |
+| `username` | string | yes |  |
+
+
+### `service.rest_server.rotate_credentials`
+
+Generate a fresh random password (and optionally a new username), rewrite the htpasswd file, restart `nasty-rest-server` so it picks up the new file. Source-side backup profiles pointing at this rest-server need their URLs updated with the new credentials before the next run, or they'll fail with HTTP 401.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `username` | string | no | Optional new username. Omit or pass empty to keep the existing one. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `password` | string | yes |  |
+| `username` | string | yes |  |
+
+
 ## Telemetry
 
 ### `telemetry.send`
@@ -4392,13 +4426,36 @@ Return a single backup profile by id.
 | `id` | string | yes |  |
 | `last_run` | `BackupRunResult` \| null | no |  |
 | `name` | string | yes |  |
-| `password` | string | yes |  |
+| `password` | string | no | Repository password as the operator supplied it. On input, the
+engine accepts this field and (when `systemd-creds` is healthy
+on this host) encrypts it into `password_encrypted` before
+persisting. On output, this field is redacted to `***`. The
+field stays as `Option<String>` rather than required so an
+older engine downgrading after the migration can still load
+the JSON state without a serde error. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | Repository password encrypted at rest via systemd-creds.
+Populated by the engine on create/update when the secrets
+backend is available. Resolution prefers this over the legacy
+plaintext `password` when both are present (during the migration
+window). |
 | `repo_initialized` | boolean | no |  |
 | `retention` | `RetentionPolicy` | no |  |
 | `schedule` | string | no |  |
 | `snapshot_before` | boolean | no |  |
 | `sources` | string[] | yes |  |
 | `target` | `BackupTarget` | yes |  |
+| `trusted_cacert` | string | no | PEM-encoded CA certificate(s) to trust as an additional root
+for this profile's TLS-using target (REST today; S3/B2 with
+custom self-signed endpoints come along when we extend opendal
+option plumbing). Set when the destination box serves HTTPS
+with a Caddy-internal-CA cert (or any self-signed cert) that
+isn't in the source box's system trust store — without this,
+the connection fails with `unable to get local issuer
+certificate`. Validates against the destination's specific
+cert (strictly safer than "skip verify": a leaked-but-valid
+cert on a different host still gets rejected). Public info,
+not encrypted on disk; written into a per-profile cacert file
+at runtime that rustic_backend reads via its `cacert` option. |
 
 
 ### `backup.profile.create`
@@ -4415,13 +4472,36 @@ Create a new backup profile (name, sources, target, password, retention) and per
 | `id` | string | yes |  |
 | `last_run` | `BackupRunResult` \| null | no |  |
 | `name` | string | yes |  |
-| `password` | string | yes |  |
+| `password` | string | no | Repository password as the operator supplied it. On input, the
+engine accepts this field and (when `systemd-creds` is healthy
+on this host) encrypts it into `password_encrypted` before
+persisting. On output, this field is redacted to `***`. The
+field stays as `Option<String>` rather than required so an
+older engine downgrading after the migration can still load
+the JSON state without a serde error. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | Repository password encrypted at rest via systemd-creds.
+Populated by the engine on create/update when the secrets
+backend is available. Resolution prefers this over the legacy
+plaintext `password` when both are present (during the migration
+window). |
 | `repo_initialized` | boolean | no |  |
 | `retention` | `RetentionPolicy` | no |  |
 | `schedule` | string | no |  |
 | `snapshot_before` | boolean | no |  |
 | `sources` | string[] | yes |  |
 | `target` | `BackupTarget` | yes |  |
+| `trusted_cacert` | string | no | PEM-encoded CA certificate(s) to trust as an additional root
+for this profile's TLS-using target (REST today; S3/B2 with
+custom self-signed endpoints come along when we extend opendal
+option plumbing). Set when the destination box serves HTTPS
+with a Caddy-internal-CA cert (or any self-signed cert) that
+isn't in the source box's system trust store — without this,
+the connection fails with `unable to get local issuer
+certificate`. Validates against the destination's specific
+cert (strictly safer than "skip verify": a leaked-but-valid
+cert on a different host still gets rejected). Public info,
+not encrypted on disk; written into a per-profile cacert file
+at runtime that rustic_backend reads via its `cacert` option. |
 
 **Returns:**
 
@@ -4431,13 +4511,36 @@ Create a new backup profile (name, sources, target, password, retention) and per
 | `id` | string | yes |  |
 | `last_run` | `BackupRunResult` \| null | no |  |
 | `name` | string | yes |  |
-| `password` | string | yes |  |
+| `password` | string | no | Repository password as the operator supplied it. On input, the
+engine accepts this field and (when `systemd-creds` is healthy
+on this host) encrypts it into `password_encrypted` before
+persisting. On output, this field is redacted to `***`. The
+field stays as `Option<String>` rather than required so an
+older engine downgrading after the migration can still load
+the JSON state without a serde error. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | Repository password encrypted at rest via systemd-creds.
+Populated by the engine on create/update when the secrets
+backend is available. Resolution prefers this over the legacy
+plaintext `password` when both are present (during the migration
+window). |
 | `repo_initialized` | boolean | no |  |
 | `retention` | `RetentionPolicy` | no |  |
 | `schedule` | string | no |  |
 | `snapshot_before` | boolean | no |  |
 | `sources` | string[] | yes |  |
 | `target` | `BackupTarget` | yes |  |
+| `trusted_cacert` | string | no | PEM-encoded CA certificate(s) to trust as an additional root
+for this profile's TLS-using target (REST today; S3/B2 with
+custom self-signed endpoints come along when we extend opendal
+option plumbing). Set when the destination box serves HTTPS
+with a Caddy-internal-CA cert (or any self-signed cert) that
+isn't in the source box's system trust store — without this,
+the connection fails with `unable to get local issuer
+certificate`. Validates against the destination's specific
+cert (strictly safer than "skip verify": a leaked-but-valid
+cert on a different host still gets rejected). Public info,
+not encrypted on disk; written into a per-profile cacert file
+at runtime that rustic_backend reads via its `cacert` option. |
 
 
 ### `backup.profile.update`
@@ -4454,13 +4557,36 @@ Replace the backup profile identified by `id` with the supplied profile body. Th
 | `id` | string | yes |  |
 | `last_run` | `BackupRunResult` \| null | no |  |
 | `name` | string | yes |  |
-| `password` | string | yes |  |
+| `password` | string | no | Repository password as the operator supplied it. On input, the
+engine accepts this field and (when `systemd-creds` is healthy
+on this host) encrypts it into `password_encrypted` before
+persisting. On output, this field is redacted to `***`. The
+field stays as `Option<String>` rather than required so an
+older engine downgrading after the migration can still load
+the JSON state without a serde error. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | Repository password encrypted at rest via systemd-creds.
+Populated by the engine on create/update when the secrets
+backend is available. Resolution prefers this over the legacy
+plaintext `password` when both are present (during the migration
+window). |
 | `repo_initialized` | boolean | no |  |
 | `retention` | `RetentionPolicy` | no |  |
 | `schedule` | string | no |  |
 | `snapshot_before` | boolean | no |  |
 | `sources` | string[] | yes |  |
 | `target` | `BackupTarget` | yes |  |
+| `trusted_cacert` | string | no | PEM-encoded CA certificate(s) to trust as an additional root
+for this profile's TLS-using target (REST today; S3/B2 with
+custom self-signed endpoints come along when we extend opendal
+option plumbing). Set when the destination box serves HTTPS
+with a Caddy-internal-CA cert (or any self-signed cert) that
+isn't in the source box's system trust store — without this,
+the connection fails with `unable to get local issuer
+certificate`. Validates against the destination's specific
+cert (strictly safer than "skip verify": a leaked-but-valid
+cert on a different host still gets rejected). Public info,
+not encrypted on disk; written into a per-profile cacert file
+at runtime that rustic_backend reads via its `cacert` option. |
 
 **Returns:**
 
@@ -4470,13 +4596,36 @@ Replace the backup profile identified by `id` with the supplied profile body. Th
 | `id` | string | yes |  |
 | `last_run` | `BackupRunResult` \| null | no |  |
 | `name` | string | yes |  |
-| `password` | string | yes |  |
+| `password` | string | no | Repository password as the operator supplied it. On input, the
+engine accepts this field and (when `systemd-creds` is healthy
+on this host) encrypts it into `password_encrypted` before
+persisting. On output, this field is redacted to `***`. The
+field stays as `Option<String>` rather than required so an
+older engine downgrading after the migration can still load
+the JSON state without a serde error. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | Repository password encrypted at rest via systemd-creds.
+Populated by the engine on create/update when the secrets
+backend is available. Resolution prefers this over the legacy
+plaintext `password` when both are present (during the migration
+window). |
 | `repo_initialized` | boolean | no |  |
 | `retention` | `RetentionPolicy` | no |  |
 | `schedule` | string | no |  |
 | `snapshot_before` | boolean | no |  |
 | `sources` | string[] | yes |  |
 | `target` | `BackupTarget` | yes |  |
+| `trusted_cacert` | string | no | PEM-encoded CA certificate(s) to trust as an additional root
+for this profile's TLS-using target (REST today; S3/B2 with
+custom self-signed endpoints come along when we extend opendal
+option plumbing). Set when the destination box serves HTTPS
+with a Caddy-internal-CA cert (or any self-signed cert) that
+isn't in the source box's system trust store — without this,
+the connection fails with `unable to get local issuer
+certificate`. Validates against the destination's specific
+cert (strictly safer than "skip verify": a leaked-but-valid
+cert on a different host still gets rejected). Public info,
+not encrypted on disk; written into a per-profile cacert file
+at runtime that rustic_backend reads via its `cacert` option. |
 
 
 ### `backup.profile.delete`
@@ -4494,7 +4643,7 @@ Remove the backup profile with the given id from persisted state.
 
 ### `backup.run`
 
-Spawn a background task that runs the profile's backup (auto-initializing the repo if needed, then pruning per the retention policy); the RPC returns immediately after accepting the request.
+Spawn a background task that runs the profile's backup (auto-initializing the repo if needed, then pruning per the retention policy). Returns a BackupJob handle immediately; poll backup.jobs.get / backup.jobs.list to watch the Pending → Running → Succeeded|Failed transition. Returns an `AlreadyRunning` error if another job for the same profile is in flight.
 
 **Role:** `operator`
 
@@ -4506,7 +4655,26 @@ Spawn a background task that runs the profile's backup (auto-initializing the re
 
 **Returns:**
 
-`object`
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | string | yes | RFC3339 timestamp string. Matches the convention used by
+`BackupRunResult.timestamp` — schemars doesn't derive
+`JsonSchema` for `chrono::DateTime` without an extra feature,
+and we'd rather not pull that in just for log-style timestamps. |
+| `error` | string | no | Operator-facing error message on failure. Display-formatted
+from the underlying `BackupError`. |
+| `finished_at` | string | no |  |
+| `id` | string | yes |  |
+| `kind` | `BackupJobKind` | yes |  |
+| `profile_id` | string | yes |  |
+| `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
+Reserved for a future progress-reporting hook (rustic exposes a
+callback we don't yet wire); empty in this Phase 1. |
+| `result` | object | no | Engine result payload on success. Shape depends on `kind`:
+JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
+JSON object for `RunBackup`. |
+| `started_at` | string | no |  |
+| `state` | `BackupJobState` | yes |  |
 
 
 ### `backup.snapshots`
@@ -4528,7 +4696,7 @@ List all snapshots stored in the profile's repository (id, time, hostname, paths
 
 ### `backup.repo.init`
 
-Initialize a fresh rustic repository at the profile's target using its password, then mark the profile as `repo_initialized`.
+Initialize a fresh rustic repository at the profile's target using its password, then mark the profile as `repo_initialized`. Returns a BackupJob handle immediately; init can take 30+ seconds on remote REST / S3 targets so the actual work runs in the background and the caller polls backup.jobs.get for completion.
 
 **Role:** `operator`
 
@@ -4540,12 +4708,31 @@ Initialize a fresh rustic repository at the profile's target using its password,
 
 **Returns:**
 
-`object`
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | string | yes | RFC3339 timestamp string. Matches the convention used by
+`BackupRunResult.timestamp` — schemars doesn't derive
+`JsonSchema` for `chrono::DateTime` without an extra feature,
+and we'd rather not pull that in just for log-style timestamps. |
+| `error` | string | no | Operator-facing error message on failure. Display-formatted
+from the underlying `BackupError`. |
+| `finished_at` | string | no |  |
+| `id` | string | yes |  |
+| `kind` | `BackupJobKind` | yes |  |
+| `profile_id` | string | yes |  |
+| `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
+Reserved for a future progress-reporting hook (rustic exposes a
+callback we don't yet wire); empty in this Phase 1. |
+| `result` | object | no | Engine result payload on success. Shape depends on `kind`:
+JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
+JSON object for `RunBackup`. |
+| `started_at` | string | no |  |
+| `state` | `BackupJobState` | yes |  |
 
 
 ### `backup.repo.check`
 
-Run a rustic repository integrity check (`repo.check`) on the profile's target repo and return a status message.
+Run a rustic repository integrity check (`repo.check`) on the profile's target repo. Returns a BackupJob handle immediately; check can take minutes on large repos and the caller polls backup.jobs.get for the result.
 
 **Role:** `operator`
 
@@ -4554,6 +4741,89 @@ Run a rustic repository integrity check (`repo.check`) on the profile's target r
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `id` | string | yes | Backup profile identifier. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | string | yes | RFC3339 timestamp string. Matches the convention used by
+`BackupRunResult.timestamp` — schemars doesn't derive
+`JsonSchema` for `chrono::DateTime` without an extra feature,
+and we'd rather not pull that in just for log-style timestamps. |
+| `error` | string | no | Operator-facing error message on failure. Display-formatted
+from the underlying `BackupError`. |
+| `finished_at` | string | no |  |
+| `id` | string | yes |  |
+| `kind` | `BackupJobKind` | yes |  |
+| `profile_id` | string | yes |  |
+| `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
+Reserved for a future progress-reporting hook (rustic exposes a
+callback we don't yet wire); empty in this Phase 1. |
+| `result` | object | no | Engine result payload on success. Shape depends on `kind`:
+JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
+JSON object for `RunBackup`. |
+| `started_at` | string | no |  |
+| `state` | `BackupJobState` | yes |  |
+
+
+### `backup.jobs.list`
+
+List active and recently-finished backup jobs (init / run / check), newest first. Optional `profile_id` filter narrows the list to one profile. Terminal jobs are GC'd one hour after they finish, so this returns a bounded window rather than full history.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `profile_id` | string | no | Optional profile id filter; omit to list jobs across all profiles. |
+
+**Returns:**
+
+``BackupJob`[]`
+
+
+### `backup.jobs.get`
+
+Return one backup job by id. 404-equivalent error when the id is unknown (job never existed or was GC'd after its retention window).
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Backup job identifier (UUID returned by backup.repo.init / backup.run / backup.repo.check). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | string | yes | RFC3339 timestamp string. Matches the convention used by
+`BackupRunResult.timestamp` — schemars doesn't derive
+`JsonSchema` for `chrono::DateTime` without an extra feature,
+and we'd rather not pull that in just for log-style timestamps. |
+| `error` | string | no | Operator-facing error message on failure. Display-formatted
+from the underlying `BackupError`. |
+| `finished_at` | string | no |  |
+| `id` | string | yes |  |
+| `kind` | `BackupJobKind` | yes |  |
+| `profile_id` | string | yes |  |
+| `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
+Reserved for a future progress-reporting hook (rustic exposes a
+callback we don't yet wire); empty in this Phase 1. |
+| `result` | object | no | Engine result payload on success. Shape depends on `kind`:
+JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
+JSON object for `RunBackup`. |
+| `started_at` | string | no |  |
+| `state` | `BackupJobState` | yes |  |
+
+
+### `backup.secrets_status`
+
+Report whether systemd-creds is available on this host and which backend (`tpm-and-host` / `host-only`) it would use to encrypt new backup secrets. Surfaced as the status pill on the Backups page so operators can tell at a glance whether their stored passwords / cloud keys are encrypted at rest.
+
+**Role:** `any`
 
 **Returns:**
 
@@ -5908,6 +6178,37 @@ it (e.g. `"6.0 Gb/s"`, `"3.0 Gb/s"`). When this is below
 backplane, or controller-port problem worth investigating. |
 | `interface_speed_max` | string | no | Maximum link speed the drive can negotiate. |
 
+### `BackupJob`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | string | yes | RFC3339 timestamp string. Matches the convention used by
+`BackupRunResult.timestamp` — schemars doesn't derive
+`JsonSchema` for `chrono::DateTime` without an extra feature,
+and we'd rather not pull that in just for log-style timestamps. |
+| `error` | string | no | Operator-facing error message on failure. Display-formatted
+from the underlying `BackupError`. |
+| `finished_at` | string | no |  |
+| `id` | string | yes |  |
+| `kind` | `BackupJobKind` | yes |  |
+| `profile_id` | string | yes |  |
+| `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
+Reserved for a future progress-reporting hook (rustic exposes a
+callback we don't yet wire); empty in this Phase 1. |
+| `result` | object | no | Engine result payload on success. Shape depends on `kind`:
+JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
+JSON object for `RunBackup`. |
+| `started_at` | string | no |  |
+| `state` | `BackupJobState` | yes |  |
+
+### `BackupJobKind`
+
+Enum: `init_repo`, `run_backup`, `check_repo`
+
+### `BackupJobState`
+
+*(see schema)*
+
 ### `BackupProfile`
 
 | Field | Type | Required | Description |
@@ -5916,13 +6217,36 @@ backplane, or controller-port problem worth investigating. |
 | `id` | string | yes |  |
 | `last_run` | `BackupRunResult` \| null | no |  |
 | `name` | string | yes |  |
-| `password` | string | yes |  |
+| `password` | string | no | Repository password as the operator supplied it. On input, the
+engine accepts this field and (when `systemd-creds` is healthy
+on this host) encrypts it into `password_encrypted` before
+persisting. On output, this field is redacted to `***`. The
+field stays as `Option<String>` rather than required so an
+older engine downgrading after the migration can still load
+the JSON state without a serde error. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | Repository password encrypted at rest via systemd-creds.
+Populated by the engine on create/update when the secrets
+backend is available. Resolution prefers this over the legacy
+plaintext `password` when both are present (during the migration
+window). |
 | `repo_initialized` | boolean | no |  |
 | `retention` | `RetentionPolicy` | no |  |
 | `schedule` | string | no |  |
 | `snapshot_before` | boolean | no |  |
 | `sources` | string[] | yes |  |
 | `target` | `BackupTarget` | yes |  |
+| `trusted_cacert` | string | no | PEM-encoded CA certificate(s) to trust as an additional root
+for this profile's TLS-using target (REST today; S3/B2 with
+custom self-signed endpoints come along when we extend opendal
+option plumbing). Set when the destination box serves HTTPS
+with a Caddy-internal-CA cert (or any self-signed cert) that
+isn't in the source box's system trust store — without this,
+the connection fails with `unable to get local issuer
+certificate`. Validates against the destination's specific
+cert (strictly safer than "skip verify": a leaked-but-valid
+cert on a different host still gets rejected). Public info,
+not encrypted on disk; written into a per-profile cacert file
+at runtime that rustic_backend reads via its `cacert` option. |
 
 ### `BackupRunResult`
 
@@ -6187,6 +6511,10 @@ the same block device path but have distinct transport flags. |
 | `manufacturer` | string | no |  |
 | `product` | string | no |  |
 | `version` | string | no |  |
+
+### `EncryptedBlob`
+
+*(see schema)*
 
 ### `EnrollmentPhase`
 
@@ -6733,6 +7061,10 @@ UI render "X hours ago" relative to the drive's current
 `power_on_hours`. |
 | `result` | string | yes | Result string — e.g. `"Completed"`, `"Aborted (device reset ?)"`,
 `"Self test in progress ..."`, `"Read element of test failed"`. |
+
+### `SecretsBackend`
+
+*(see schema)*
 
 ### `SecureBootStatus`
 
