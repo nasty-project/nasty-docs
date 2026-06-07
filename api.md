@@ -1131,8 +1131,23 @@ Return current scrub status.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `raw` | string | yes | Raw text output from the bcachefs scrub status command. |
+| `last_duration_secs` | integer | no | Duration of the most recent completed scrub, in seconds. |
+| `last_outcome` | `ScrubOutcome` \| null | no | Outcome of the most recent completed scrub. |
+| `last_output` | string | no | Captured stdout+stderr from the most recent completed scrub.
+Truncated to the last `SCRUB_OUTPUT_KEEP_BYTES` so a chatty
+long-running scrub doesn't bloat the state file. |
+| `last_run_at` | integer | no | Unix seconds when the most recent completed scrub finished. |
+| `progress_percent` | number | no | 0-100 progress of the in-flight scrub, parsed from the
+most recent `XX%` token in bcachefs's streaming output. Only
+populated while `running`; deliberately NOT persisted so an
+engine restart while a scrub is in flight doesn't surface
+a stale percent from a child that's no longer being read. |
+| `raw` | string | yes | Human-readable summary string — kept for backward compatibility
+with the existing Diagnostics tab renderer (which reads `raw`).
+New WebUI surfaces should prefer the typed fields above. |
 | `running` | boolean | yes | Whether a scrub is currently in progress. |
+| `started_at` | integer | no | Unix seconds when the current run started. `Some` while
+`running`; cleared on completion. |
 
 
 ### `fs.reconcile.status`
@@ -6991,6 +7006,10 @@ transition is also visible on the wizard's polled UI. |
 ### `Role`
 
 Enum: `admin`
+
+### `ScrubOutcome`
+
+*(see schema)*
 
 ### `ScsiErrorCounters`
 
