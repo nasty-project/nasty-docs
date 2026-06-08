@@ -3280,11 +3280,12 @@ ceremony. |
 UEFI boot environment. BIOS / legacy boots return false and
 every downstream check collapses to `None`. |
 | `wrapper_has_lanzaboote_input` | boolean | no | `Some(true)` when `/etc/nixos/flake.nix` declares
-`lanzaboote.url = ...` at top level. `Some(false)` on pre-
-this-PR wrappers (operator needs to upgrade once so the
-engine re-renders the template). `None` when we couldn't
-read /etc/nixos/flake.nix (operator running an unusual
-install or read failed). |
+`lanzaboote.url = ...` at top level — i.e. this box is already
+enrolled (the engine injects the input during the enrollment
+ceremony). `Some(false)` is the normal pre-enrollment state:
+the wrapper template omits the input on purpose and enrollment
+adds it, so this is *not* a blocker. `None` when we couldn't
+read /etc/nixos/flake.nix. Surfaced purely for the checklist. |
 
 
 ### `system.secure_boot.enrollment.status`
