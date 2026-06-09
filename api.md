@@ -2660,7 +2660,12 @@ Return the current OIDC settings with `client_secret` redacted to `<set>`/`<unse
 |-------|------|:--------:|-------------|
 | `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
 | `client_id` | string | no | OAuth client_id registered with the IdP. |
-| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value.
+Encrypted into `client_secret_encrypted` at rest when the secrets
+backend is healthy, in which case this field is blanked. |
+| `client_secret_encrypted` | `EncryptedBlob` \| null | no | OAuth client_secret encrypted at rest via systemd-creds. Populated
+by the engine when the secrets backend is available; preferred over
+the legacy plaintext `client_secret` when set. |
 | `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
 | `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
 | `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
@@ -2701,7 +2706,12 @@ Update the OIDC settings (preserves the stored client_secret if the caller sends
 |-------|------|:--------:|-------------|
 | `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
 | `client_id` | string | no | OAuth client_id registered with the IdP. |
-| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value.
+Encrypted into `client_secret_encrypted` at rest when the secrets
+backend is healthy, in which case this field is blanked. |
+| `client_secret_encrypted` | `EncryptedBlob` \| null | no | OAuth client_secret encrypted at rest via systemd-creds. Populated
+by the engine when the secrets backend is available; preferred over
+the legacy plaintext `client_secret` when set. |
 | `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
 | `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
 | `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
@@ -2716,7 +2726,12 @@ Update the OIDC settings (preserves the stored client_secret if the caller sends
 |-------|------|:--------:|-------------|
 | `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
 | `client_id` | string | no | OAuth client_id registered with the IdP. |
-| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value.
+Encrypted into `client_secret_encrypted` at rest when the secrets
+backend is healthy, in which case this field is blanked. |
+| `client_secret_encrypted` | `EncryptedBlob` \| null | no | OAuth client_secret encrypted at rest via systemd-creds. Populated
+by the engine when the secrets backend is available; preferred over
+the legacy plaintext `client_secret` when set. |
 | `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
 | `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
 | `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
@@ -3123,7 +3138,13 @@ Local mode only. |
 | `port` | string | no | Device port. `auto` for USB auto-detection, or a path like `/dev/ttyS0`.
 Local mode only. |
 | `remote_host` | string | no | Hostname or IP of the remote NUT server.  Remote mode only. |
-| `remote_password` | string | no | Password configured in the remote upsd.users.  Remote mode only. |
+| `remote_password` | string | no | Password configured in the remote upsd.users.  Remote mode only.
+Operator-supplied plaintext: redacted to `***` on output and, when
+the secrets backend is healthy, encrypted into
+`remote_password_encrypted` and blanked here before persisting. |
+| `remote_password_encrypted` | `EncryptedBlob` \| null | no | Remote NUT server password encrypted at rest via systemd-creds.
+Populated by the engine when the secrets backend is available;
+preferred over the legacy plaintext `remote_password` when set. |
 | `remote_port` | integer | no | Port the remote NUT server listens on (default 3493).  Remote mode only. |
 | `remote_username` | string | no | Username configured in the remote upsd.users.  Remote mode only. |
 | `shutdown_command` | string | no | Command to execute for system shutdown. |
@@ -3166,7 +3187,13 @@ Local mode only. |
 | `port` | string | no | Device port. `auto` for USB auto-detection, or a path like `/dev/ttyS0`.
 Local mode only. |
 | `remote_host` | string | no | Hostname or IP of the remote NUT server.  Remote mode only. |
-| `remote_password` | string | no | Password configured in the remote upsd.users.  Remote mode only. |
+| `remote_password` | string | no | Password configured in the remote upsd.users.  Remote mode only.
+Operator-supplied plaintext: redacted to `***` on output and, when
+the secrets backend is healthy, encrypted into
+`remote_password_encrypted` and blanked here before persisting. |
+| `remote_password_encrypted` | `EncryptedBlob` \| null | no | Remote NUT server password encrypted at rest via systemd-creds.
+Populated by the engine when the secrets backend is available;
+preferred over the legacy plaintext `remote_password` when set. |
 | `remote_port` | integer | no | Port the remote NUT server listens on (default 3493).  Remote mode only. |
 | `remote_username` | string | no | Username configured in the remote upsd.users.  Remote mode only. |
 | `shutdown_command` | string | no | Command to execute for system shutdown. |
@@ -3858,6 +3885,23 @@ Send a one-shot test message ("NASty Test") through the supplied channel configu
 **Params:**
 
 `object`
+
+**Returns:**
+
+`object`
+
+
+### `notifications.test_saved`
+
+Send a test message through an already-saved channel, identified by id. Sealed secrets are resolved server-side, so the secret never has to round-trip through the client.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Channel id from notifications.config.get. |
 
 **Returns:**
 
@@ -6018,8 +6062,14 @@ Best-effort read-only lookup that returns a human-readable "in use by X" reason 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `initiator_iqn` | string | yes | Initiator IQN allowed to connect |
-| `password` | string | no | CHAP password for this initiator (optional).
-Stored on disk for configfs restore but redacted in API responses. |
+| `password` | string | no | CHAP password for this initiator (optional). Legacy plaintext:
+encrypted into `password_encrypted` at rest when the secrets
+backend is healthy, and redacted to `***` in API responses. |
+| `password_encrypted` | `EncryptedBlob` \| null | no | CHAP password encrypted at rest via systemd-creds. Populated by
+the engine when the secrets backend is available; preferred over
+the legacy plaintext `password`. (The live configfs auth and the
+kernel's saveconfig.json restore carry their own plaintext copy —
+this only seals NASty's state file.) |
 | `userid` | string | no | CHAP username for this initiator (optional). |
 
 ### `AclEntry`
@@ -6880,7 +6930,12 @@ temperature threshold. |
 |-------|------|:--------:|-------------|
 | `auto_provision` | boolean | no | When true, unknown OIDC subjects are auto-provisioned as local users on first login. |
 | `client_id` | string | no | OAuth client_id registered with the IdP. |
-| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value. |
+| `client_secret` | string | no | OAuth client_secret. Returned as a placeholder over RPC; only the engine sees the real value.
+Encrypted into `client_secret_encrypted` at rest when the secrets
+backend is healthy, in which case this field is blanked. |
+| `client_secret_encrypted` | `EncryptedBlob` \| null | no | OAuth client_secret encrypted at rest via systemd-creds. Populated
+by the engine when the secrets backend is available; preferred over
+the legacy plaintext `client_secret` when set. |
 | `default_role` | string | no | Role applied when no group mapping matches. None = deny login. |
 | `enabled` | boolean | no | Master switch — when false, OIDC endpoints return 404 and no IdP traffic occurs. |
 | `groups_claim` | string | no | Name of the ID-token claim that carries the user's groups. |
