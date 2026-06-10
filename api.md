@@ -689,6 +689,8 @@ Return current network configuration including live interface state.
 | `bridges` | `BridgeConfig`[] | no |  |
 | `dns` | string[] | no |  |
 | `interfaces` | `InterfaceConfig`[] | no |  |
+| `macvlans` | `MacvlanConfig`[] | no | Engine-managed macvlan host shims (#448). Not surfaced in the
+network editor UI — added/removed by the apps macvlan-network flow. |
 | `vlans` | `VlanConfig`[] | no |  |
 
 
@@ -706,6 +708,8 @@ Update network configuration (DHCP or static). Applied immediately without reboo
 | `bridges` | `BridgeConfig`[] | no |  |
 | `dns` | string[] | no |  |
 | `interfaces` | `InterfaceConfig`[] | no |  |
+| `macvlans` | `MacvlanConfig`[] | no | Engine-managed macvlan host shims (#448). Not surfaced in the
+network editor UI — added/removed by the apps macvlan-network flow. |
 | `vlans` | `VlanConfig`[] | no |  |
 
 
@@ -911,6 +915,9 @@ Get a single filesystem by name.
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -967,6 +974,9 @@ When false, user must enter passphrase via WebUI after every reboot. |
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1008,6 +1018,9 @@ Mount a known filesystem.
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1070,6 +1083,9 @@ Changing mount options requires a remount. |
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1148,6 +1164,50 @@ New WebUI surfaces should prefer the typed fields above. |
 | `running` | boolean | yes | Whether a scrub is currently in progress. |
 | `started_at` | integer | no | Unix seconds when the current run started. `Some` while
 `running`; cleared on completion. |
+
+
+### `fs.fsck.start`
+
+Start an offline bcachefs fsck on an unmounted filesystem (dry run by default; set repair=true to auto-repair).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+
+### `fs.fsck.status`
+
+Return current fsck status.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `last_duration_secs` | integer | no | Duration of the most recent completed run, in seconds. |
+| `last_outcome` | `FsckOutcome` \| null | no | Outcome of the most recent completed run. |
+| `last_output` | string | no | Captured stdout+stderr from the most recent completed run,
+truncated to the last `SCRUB_OUTPUT_KEEP_BYTES`. |
+| `last_repair` | boolean | no | Whether the most recent completed run was a repair vs a dry run. |
+| `last_run_at` | integer | no | Unix seconds when the most recent completed run finished. |
+| `progress_percent` | number | no | 0-100 progress of the in-flight run, when bcachefs emits a
+parseable `XX%` token. Not persisted (a restart shouldn't surface
+a stale percent). |
+| `repair` | boolean | no | Whether the in-flight (or most recent) run was a repair (`-y`)
+vs a read-only dry run (`-n`). |
+| `running` | boolean | yes | Whether an fsck is currently in progress. |
+| `started_at` | integer | no | Unix seconds when the current run started. `Some` while running. |
 
 
 ### `fs.reconcile.status`
@@ -1274,6 +1334,9 @@ Add a device to an existing mounted filesystem.
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1302,6 +1365,9 @@ Remove a device from a filesystem. The device should be fully evacuated first.
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1345,6 +1411,9 @@ Set persistent device state (`rw`, `ro`, `failed`, `spare`).
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1374,6 +1443,9 @@ Set or update the hierarchical label on a device in a mounted filesystem. Writte
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1402,6 +1474,9 @@ Bring a device back online.
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -1430,6 +1505,9 @@ Take a device offline.
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -4003,6 +4081,9 @@ Lock an encrypted filesystem by unmounting it (with cascading dependent teardown
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -4031,6 +4112,9 @@ Unlock an encrypted filesystem by passing the supplied passphrase to `bcachefs u
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -5375,6 +5459,10 @@ Return the high-level App record (name, image, status, kind, containers, ports, 
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -5410,7 +5498,11 @@ Return the deployed configuration of a named simple app (image, ports, env, volu
 | `image` | string | yes |  |
 | `memory_limit` | string | no |  |
 | `name` | string | yes |  |
+| `network` | string | no | NASty-managed Docker network the app is attached to (from label).
+Round-tripped through Edit/pull so a reinstall keeps the attachment. |
 | `ports` | `AppPort`[] | yes |  |
+| `static_ip` | string | no | The static IP requested at install (from label), if any. Distinct
+from a live auto-assigned address — re-applied verbatim on reinstall. |
 | `volumes` | `AppVolume`[] | yes |  |
 
 
@@ -5621,7 +5713,13 @@ still rejected even with this set. |
 | `image` | string | yes | Container image (e.g. "lscr.io/linuxserver/plex:latest"). |
 | `memory_limit` | string | no | Memory limit (e.g. "256m", "1g"). |
 | `name` | string | yes | App name. Must be DNS-safe. |
+| `network` | string | no | Attach the container to a NASty-managed Docker network instead of
+(only) the default bridge. For a macvlan/ipvlan network the
+container gets its own LAN IP and is *not* reachable at
+`127.0.0.1:<host_port>`, so publishing host ports and reverse-proxy
+ingress are rejected/skipped for it (see install's mutual-exclusion). |
 | `ports` | `AppPort`[] | no | Ports to expose. |
+| `static_ip` | string | no | Optional static IPv4 within the chosen network's subnet. |
 | `subdomain` | string | no | Optional FQDN to serve the app at via subdomain mode (e.g.
 `jellyfin.example.com`). When set, the install pipeline emits a
 host-matching Caddy route instead of the default path-prefix
@@ -5645,6 +5743,10 @@ hostname is taken. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -5676,7 +5778,13 @@ still rejected even with this set. |
 | `image` | string | yes | Container image (e.g. "lscr.io/linuxserver/plex:latest"). |
 | `memory_limit` | string | no | Memory limit (e.g. "256m", "1g"). |
 | `name` | string | yes | App name. Must be DNS-safe. |
+| `network` | string | no | Attach the container to a NASty-managed Docker network instead of
+(only) the default bridge. For a macvlan/ipvlan network the
+container gets its own LAN IP and is *not* reachable at
+`127.0.0.1:<host_port>`, so publishing host ports and reverse-proxy
+ingress are rejected/skipped for it (see install's mutual-exclusion). |
 | `ports` | `AppPort`[] | no | Ports to expose. |
+| `static_ip` | string | no | Optional static IPv4 within the chosen network's subnet. |
 | `subdomain` | string | no | Optional FQDN to serve the app at via subdomain mode (e.g.
 `jellyfin.example.com`). When set, the install pipeline emits a
 host-matching Caddy route instead of the default path-prefix
@@ -5700,6 +5808,10 @@ hostname is taken. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -5786,6 +5898,10 @@ Pull the latest image(s) for a named app and recreate the container(s) — for s
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -5914,6 +6030,10 @@ Deploy a new compose-based app by writing its docker-compose.yml to disk, pre-cr
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -5949,6 +6069,10 @@ Overwrite a compose app's docker-compose.yml, pre-create any newly added bind-mo
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -6053,6 +6177,52 @@ Best-effort read-only lookup that returns a human-readable "in use by X" reason 
 `object`
 
 
+### `apps.networks.list`
+
+List Docker networks NASty can manage — merges live Docker state with persisted managed-network specs and annotates each with exists/managed/attached_apps.
+
+**Role:** `any`
+
+**Returns:**
+
+``NetworkSummary`[]`
+
+
+### `apps.networks.create`
+
+Create a NASty-managed Docker network (bridge/macvlan/ipvlan) on a validated host parent interface and persist the spec for boot reconcile.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `driver` | string | yes | "bridge" | "macvlan" | "ipvlan". |
+| `gateway` | string | no |  |
+| `host_shim` | boolean | no | macvlan only: create a host-side shim so host↔container works. |
+| `ip_range` | string | no |  |
+| `name` | string | yes |  |
+| `parent` | string | no | Host interface/bridge for macvlan/ipvlan; absent for bridge. |
+| `shim_ip` | string | no | The host's address on the container subnet (CIDR) for the shim.
+Required when `host_shim` is set. |
+| `subnet` | string | no |  |
+| `vlan` | integer | no | 802.1q tag; the effective docker parent becomes `parent.vlan`. |
+
+
+### `apps.networks.remove`
+
+Remove a NASty-managed Docker network. Refuses while any container is still attached.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Network name. |
+
+
 ---
 
 ## Object Definitions
@@ -6138,6 +6308,10 @@ Enum: `warning`, `critical`
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
+| `network` | string | no | Name of the NASty-managed Docker network this app is attached to,
+if any. The WebUI shows a badge and (for macvlan/ipvlan) suppresses
+the reverse-proxy "Open" link since the app is reached on its own IP. |
+| `network_ip` | string | no | The app's IP on that network, when known. |
 | `ports` | `MappedPort`[] | no | Host ports mapped by this app. |
 | `proxy_disabled_reason` | string | no | Human-readable reason the reverse-proxy ingress was disabled for
 this app — set when the post-install probe detects that the
@@ -6592,6 +6766,9 @@ the same block device path but have distinct transport flags. |
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | Bytes available for writing. |
 | `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
+| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
+the filesystem is not mounted. `None` when it's mounted or has
+no recorded failure. |
 | `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
 | `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
 | `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
@@ -6679,6 +6856,10 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `smb_shares` | string[] | yes |  |
 | `subvolumes` | string[] | yes |  |
 | `vms` | string[] | yes |  |
+
+### `FsckOutcome`
+
+*(see schema)*
 
 ### `Generation`
 
@@ -6770,6 +6951,18 @@ Enum: `dhcp`
 | `lun_id` | integer | yes |  |
 | `size_bytes` | integer | no |  |
 
+### `MacvlanConfig`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `ipv4` | `IpConfig` | no | The host's static address on the container subnet. |
+| `mode` | string | no | NM macvlan mode; only "bridge" is created today. |
+| `mtu` | integer | no |  |
+| `name` | string | yes | Kernel interface name (e.g. `nasty-shim-lan`). |
+| `parent` | string | yes | Parent interface/bridge the macvlan attaches to. |
+| `routes` | string[] | no | Container subnet(s)/ip-range the host should reach via this shim
+(on-link routes). CIDR strings. |
+
 ### `MappedPort`
 
 | Field | Type | Required | Description |
@@ -6797,6 +6990,28 @@ Enum: `dhcp`
 | `slots_total` | integer | yes | Total DIMM slots on the system (populated + empty). |
 | `slots_used` | integer | yes | Slots with a DIMM in them. |
 | `total_bytes` | integer | yes | Sum of all populated DIMM sizes in bytes. |
+
+### `MissingDevice`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `label` | string | no | Hierarchical tiering label (e.g. "hdd.archive"), when known. |
+| `member_index` | integer | no | bcachefs member index, when derivable from show-super. |
+| `path` | string | yes | The device path NASty expected (from the persisted member list). |
+
+### `MountFailure`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `attempted_at` | integer | yes | Unix seconds when the failed attempt happened. |
+| `message` | string | yes | Short, operator-facing explanation. |
+| `missing_devices` | `MissingDevice`[] | no | Expected member devices that were absent at attempt time. |
+| `raw` | string | yes | Raw bcachefs stderr, kept verbatim for the details expander. |
+| `reason` | `MountFailureReason` | yes | Classified reason, driving the UI's suggested next step. |
+
+### `MountFailureReason`
+
+*(see schema)*
 
 ### `Namespace`
 
@@ -6826,6 +7041,24 @@ Enum: `dhcp`
 | `revert_at_unix` | integer | yes |  |
 | `risk_reason` | string | yes |  |
 | `txn_id` | string | yes |  |
+
+### `NetworkSummary`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `attached_apps` | string[] | no | Container names currently attached (drives remove-refusal + UI). |
+| `driver` | string | yes | "bridge" | "macvlan" | "ipvlan". |
+| `exists` | boolean | yes | Present in Docker right now. |
+| `gateway` | string | no |  |
+| `host_shim` | boolean | no | macvlan only: create a host-side shim so host↔container works. |
+| `ip_range` | string | no |  |
+| `managed` | boolean | yes | Created/labeled by NASty (vs a pre-existing Docker network). |
+| `name` | string | yes |  |
+| `parent` | string | no | Host interface/bridge for macvlan/ipvlan; absent for bridge. |
+| `shim_ip` | string | no | The host's address on the container subnet (CIDR) for the shim.
+Required when `host_shim` is set. |
+| `subnet` | string | no |  |
+| `vlan` | integer | no | 802.1q tag; the effective docker parent becomes `parent.vlan`. |
 
 ### `NfsClient`
 
