@@ -257,6 +257,11 @@ this to surface a top-bar "reboot pending" cue. False when
 the running version probe fails (unknown) or the wrapper has
 no pinned ref to compare against. |
 | `bcachefs_pinned_ref` | string | no | The ref currently pinned in `/etc/nixos/flake.lock` for `bcachefs-tools`. |
+| `bcachefs_recommended_ref` | string | no | The bcachefs-tools ref this NASty build was shipped/tested with
+(parsed from nasty's flake.nix baked into the engine at build
+time). When this differs from `bcachefs_pinned_ref`, the WebUI's
+top-bar chip offers a one-click switch of the operator's pin to
+this ref. `None` if the embedded flake can't be parsed. |
 | `bcachefs_version` | string | yes | Output of `bcachefs version` (first line). |
 | `engine_built` | string | no | Build timestamp of the engine binary. |
 | `engine_commit` | string | no | Git commit the engine binary was compiled from. |
@@ -6781,6 +6786,7 @@ no recorded failure. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `checksum_errors` | integer | no | Cumulative checksum errors (since filesystem creation). |
 | `data_allowed` | string | no | Which data types are allowed on this device (e.g. "journal,btree,user"). |
 | `discard` | boolean | no | Whether TRIM/discard is enabled on this device. |
 | `durability` | integer | no | How many replicas a copy on this device counts for.
@@ -6788,8 +6794,20 @@ no recorded failure. |
 | `has_data` | string | no | Which data types are currently stored on this device (e.g. "btree,user"). |
 | `label` | string | no | Hierarchical label (e.g. "ssd.fast", "hdd.archive").
 Used for target-based tiering. |
+| `member_index` | integer | no | bcachefs member index (the `Device N` slot). Stable across
+reboots and independent of the kernel device name, so it
+disambiguates "is this the same member?" when a disk is removed
+and re-added — possibly in a different physical slot. From
+show-super, so available mounted or not. See #452. |
 | `path` | string | yes |  |
+| `read_errors` | integer | no | Cumulative read IO errors (since filesystem creation), from
+`/sys/fs/bcachefs/<uuid>/dev-N/io_errors`. Only populated while
+the filesystem is mounted (sysfs is absent otherwise). |
 | `state` | string | no | Persistent device state: rw, ro, evacuating, spare. |
+| `uuid` | string | no | Stable per-device bcachefs UUID (distinct from the filesystem
+UUID). From `/sys/fs/bcachefs/<fs>/dev-N/uuid`, so populated only
+while mounted. |
+| `write_errors` | integer | no | Cumulative write IO errors (since filesystem creation). |
 
 ### `FilesystemOptions`
 
