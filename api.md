@@ -1361,8 +1361,14 @@ Remove a device from a filesystem. The device should be fully evacuated first.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `device` | string | yes | Absolute path of the block device (e.g. `/dev/sdb`). |
+| `device` | string | yes | The device to act on: an absolute block-device path (e.g. `/dev/sdb`)
+or, for a missing/dead member with no current path, its numeric
+bcachefs member index. |
 | `filesystem` | string | yes | Name of the filesystem containing the device. |
+| `force` | boolean | no | Force removal even when data/metadata can't be migrated off first —
+required for a *missing* member (the disk is gone, nothing to
+evacuate; safe while enough replicas remain on surviving devices).
+Ignored by non-remove actions. |
 
 **Returns:**
 
@@ -1392,8 +1398,14 @@ Evacuate all data from a device to the remaining filesystem members. Long-runnin
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `device` | string | yes | Absolute path of the block device (e.g. `/dev/sdb`). |
+| `device` | string | yes | The device to act on: an absolute block-device path (e.g. `/dev/sdb`)
+or, for a missing/dead member with no current path, its numeric
+bcachefs member index. |
 | `filesystem` | string | yes | Name of the filesystem containing the device. |
+| `force` | boolean | no | Force removal even when data/metadata can't be migrated off first —
+required for a *missing* member (the disk is gone, nothing to
+evacuate; safe while enough replicas remain on surviving devices).
+Ignored by non-remove actions. |
 
 
 ### `fs.device.set_state`
@@ -1470,8 +1482,14 @@ Bring a device back online.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `device` | string | yes | Absolute path of the block device (e.g. `/dev/sdb`). |
+| `device` | string | yes | The device to act on: an absolute block-device path (e.g. `/dev/sdb`)
+or, for a missing/dead member with no current path, its numeric
+bcachefs member index. |
 | `filesystem` | string | yes | Name of the filesystem containing the device. |
+| `force` | boolean | no | Force removal even when data/metadata can't be migrated off first —
+required for a *missing* member (the disk is gone, nothing to
+evacuate; safe while enough replicas remain on surviving devices).
+Ignored by non-remove actions. |
 
 **Returns:**
 
@@ -1501,8 +1519,14 @@ Take a device offline.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `device` | string | yes | Absolute path of the block device (e.g. `/dev/sdb`). |
+| `device` | string | yes | The device to act on: an absolute block-device path (e.g. `/dev/sdb`)
+or, for a missing/dead member with no current path, its numeric
+bcachefs member index. |
 | `filesystem` | string | yes | Name of the filesystem containing the device. |
+| `force` | boolean | no | Force removal even when data/metadata can't be migrated off first —
+required for a *missing* member (the disk is gone, nothing to
+evacuate; safe while enough replicas remain on surviving devices).
+Ignored by non-remove actions. |
 
 **Returns:**
 
@@ -5680,6 +5704,30 @@ field — that's the comparison we make. |
 ``VolumeMismatch`[]`
 
 
+### `apps.check_compose`
+
+Validate a docker-compose YAML the way deploy will: in-process YAML syntax check, then `docker compose config` schema validation, returning per-line diagnostics for the editor to underline.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `compose` | string | yes | Full docker-compose YAML text, as it sits in the editor. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `diagnostics` | `ComposeDiagnostic`[] | yes |  |
+| `schema_checked` | boolean | yes | False when schema validation couldn't run (docker compose not
+on PATH — apps disabled, or a stripped-down box). YAML syntax is
+still checked in-process; the UI shouldn't claim "fully valid"
+when this is false. |
+| `valid` | boolean | yes |  |
+
+
 ### `apps.enable`
 
 Enable the apps runtime on this box (optionally pinning the storage filesystem) and start Docker.
@@ -6526,6 +6574,10 @@ at runtime that rustic_backend reads via its `cacert` option. |
 | `dev_type` | string | yes | lsblk device type: `disk` or `part`. |
 | `device_class` | string | yes | Device speed class: "nvme", "ssd", or "hdd". |
 | `fs_type` | string | no | Filesystem type detected on the device (e.g. `bcachefs`, `ext4`). |
+| `fs_uuid` | string | no | Filesystem UUID from lsblk — for bcachefs members this is the
+*external* (whole-filesystem) UUID, so a candidate disk can be
+matched against an existing pool's `Filesystem.uuid` to tell an
+offline/former member apart from a foreign disk (#472). |
 | `in_use` | boolean | yes | Whether the device is currently in use (mounted, in a filesystem, or has partitions in use). |
 | `model` | string | no | Drive model from lsblk (e.g. "Samsung SSD 970 EVO Plus 1TB"). None
 for partitions and for virtual disks that don't expose a model. |
@@ -6628,6 +6680,14 @@ ends in a `reverse_proxy` handler. `None` for `file_server`,
 | `enabled` | boolean | yes |  |
 | `id` | string | yes |  |
 | `name` | string | yes |  |
+
+### `ComposeDiagnostic`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `line` | integer | no | 1-based line in the compose text, when the validator names one.
+Schema-level findings (e.g. an unknown property) often don't. |
+| `message` | string | yes |  |
 
 ### `CpuStats`
 
@@ -6799,6 +6859,10 @@ reboots and independent of the kernel device name, so it
 disambiguates "is this the same member?" when a disk is removed
 and re-added — possibly in a different physical slot. From
 show-super, so available mounted or not. See #452. |
+| `missing` | boolean | no | True when this is a *missing* member: the bcachefs superblock still
+lists it (phantom `dev-N` in sysfs) but its block device is gone
+(pulled/dead). `path` then carries a synthetic placeholder, not a
+real `/dev` node — remove it by `member_index` with force. See #466. |
 | `path` | string | yes |  |
 | `read_errors` | integer | no | Cumulative read IO errors (since filesystem creation), from
 `/sys/fs/bcachefs/<uuid>/dev-N/io_errors`. Only populated while
