@@ -581,7 +581,12 @@ only affects rendering in the WebUI. |
   - "dns"       → DNS-01 via a DNS-provider plugin compiled into Caddy |
 | `tls_dns_credentials` | string | no | DNS provider API credentials as KEY=VALUE lines.
 Written to a Caddy `EnvironmentFile` and referenced from the
-generated `tls` block via `{env.KEY}` placeholders. |
+generated `tls` block via `{env.KEY}` placeholders.
+Encrypted into `tls_dns_credentials_encrypted` at rest when the
+secrets backend is healthy, in which case this field is blanked. |
+| `tls_dns_credentials_encrypted` | `EncryptedBlob` \| null | no | DNS provider credentials encrypted at rest via systemd-creds.
+Populated by the engine when the secrets backend is available;
+preferred over the legacy plaintext field when set. |
 | `tls_dns_propagation_wait` | integer | no | Seconds to wait after creating the TXT record before checking
 propagation. Defaults to 30. The recursive resolvers we use to
 verify propagation often have a long negative TTL on the
@@ -647,7 +652,12 @@ only affects rendering in the WebUI. |
   - "dns"       → DNS-01 via a DNS-provider plugin compiled into Caddy |
 | `tls_dns_credentials` | string | no | DNS provider API credentials as KEY=VALUE lines.
 Written to a Caddy `EnvironmentFile` and referenced from the
-generated `tls` block via `{env.KEY}` placeholders. |
+generated `tls` block via `{env.KEY}` placeholders.
+Encrypted into `tls_dns_credentials_encrypted` at rest when the
+secrets backend is healthy, in which case this field is blanked. |
+| `tls_dns_credentials_encrypted` | `EncryptedBlob` \| null | no | DNS provider credentials encrypted at rest via systemd-creds.
+Populated by the engine when the secrets backend is available;
+preferred over the legacy plaintext field when set. |
 | `tls_dns_propagation_wait` | integer | no | Seconds to wait after creating the TXT record before checking
 propagation. Defaults to 30. The recursive resolvers we use to
 verify propagation often have a long negative TTL on the
@@ -5447,6 +5457,10 @@ Return runtime status of the apps subsystem (enabled flag, Docker running, app c
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `app_count` | integer | yes | Number of managed apps (running or stopped). |
+| `appdata_ok` | boolean | no | Whether `/appdata` currently resolves to an existing directory. |
+| `appdata_path` | string | no | Real path behind the stable `/appdata` symlink (#436), e.g.
+`/fs/tank/appdata`. None until the appdata subvolume has been
+set up (next boot for installs that predate the feature). |
 | `disk_usage_bytes` | integer | no | Docker disk usage: images + containers + volumes in bytes. |
 | `docker_version` | string | no | Docker server version. |
 | `enabled` | boolean | yes | Whether the apps runtime is enabled. |
@@ -5726,6 +5740,30 @@ on PATH — apps disabled, or a stripped-down box). YAML syntax is
 still checked in-process; the UI shouldn't claim "fully valid"
 when this is false. |
 | `valid` | boolean | yes |  |
+
+
+### `apps.appdata.status`
+
+Progress/outcome of the current or most recent appdata relocation, or null if none has run since engine start.
+
+**Role:** `any`
+
+**Returns:**
+
+`object`
+
+
+### `apps.appdata.relocate`
+
+Move the appdata subvolume to another filesystem and flip the stable /appdata symlink: stops apps that bind /appdata, copies with ownership preserved, switches, restarts them. The old copy is left in place for the operator to delete after verifying.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Target filesystem name (the <X> of /fs/<X>). |
 
 
 ### `apps.enable`
@@ -6450,6 +6488,19 @@ the value matches host memory. |
 | `host_path` | string | no | Host path (auto-generated under apps storage if empty). |
 | `mount_path` | string | yes | Mount path inside the container. |
 | `name` | string | yes | Volume name (e.g. "config", "data"). |
+
+### `AppdataRelocateStatus`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `affected_apps` | string[] | yes | Apps that bind `/appdata` and were stopped for the move. |
+| `error` | string | no |  |
+| `old_path` | string | no | On success: the previous appdata path, left in place as a safety
+copy for the operator to delete after verifying the move. |
+| `phase` | string | yes | `stopping_apps` → `copying` → `switching` → `restarting` →
+`done` | `failed`. |
+| `running` | boolean | yes |  |
+| `target_fs` | string | yes | Target filesystem name (the `<X>` of `/fs/<X>/appdata`). |
 
 ### `AtaHealth`
 
