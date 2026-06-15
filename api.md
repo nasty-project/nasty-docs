@@ -6829,6 +6829,11 @@ the same value); the WebUI dedupes via its existing
 controller-grouping logic in the Topology view. `None` for
 non-PCIe-attached drives (USB bridges, virtio in VMs). |
 | `power_on_hours` | integer | no | Accumulated powered-on time in hours. |
+| `rotational` | boolean | no | Whether the drive spins: `Some(true)` for an HDD, `Some(false)`
+for an SSD (smartctl reports rotation rate 0 / "Solid State
+Device"), `None` when unknown (NVMe dumps carry no rotation_rate,
+and SMART-unavailable drives have nothing to read). Used to scope
+the HDD-failure SMART-attribute alert to spinning disks (#503). |
 | `scsi` | `ScsiHealth` \| null | no | SCSI / SAS health information (`Some` only on SAS / SCSI drives,
 including SAS drives reached via `-d megaraid,N`). |
 | `serial` | string | yes | Drive serial number. |
