@@ -6923,6 +6923,16 @@ real `/dev` node — remove it by `member_index` with force. See #466. |
 | `read_errors` | integer | no | Cumulative read IO errors (since filesystem creation), from
 `/sys/fs/bcachefs/<uuid>/dev-N/io_errors`. Only populated while
 the filesystem is mounted (sysfs is absent otherwise). |
+| `rotational` | boolean | no | bcachefs's own per-member `Rotational` flag from the superblock
+(`show-super -f members_v2`). This is what bcachefs uses for its
+SSD-vs-HDD optimization decisions — NOT the live hardware type
+(that's `BlockDevice.rotational`, derived from sysfs/lsblk). The
+two can disagree: bcachefs latches this on first mount and can
+get it wrong (an SSD stuck at `Rotational: 1`), so surfacing it
+lets the operator spot the mis-latch (#501, upstream
+koverstreet/bcachefs-tools#594). Sourced from show-super (not
+sysfs) keyed by member index so it means the same persisted thing
+whether or not the pool is mounted. |
 | `state` | string | no | Persistent device state: rw, ro, evacuating, spare. |
 | `uuid` | string | no | Stable per-device bcachefs UUID (distinct from the filesystem
 UUID). From `/sys/fs/bcachefs/<fs>/dev-N/uuid`, so populated only
