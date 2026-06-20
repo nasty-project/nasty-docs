@@ -63,6 +63,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [SMB Shares](#smb-shares)
 - [iSCSI Targets](#iscsi-targets)
 - [NVMe-oF Subsystems](#nvme-of-subsystems)
+- [Guest Shares](#guest-shares)
 - [OIDC](#oidc)
 - [WebAuthn](#webauthn)
 - [Audit](#audit)
@@ -2761,6 +2762,117 @@ Disallow a host NQN from a subsystem.
 | `namespaces` | `Namespace`[] | yes | Block device namespaces exposed by this subsystem. |
 | `nqn` | string | yes | NVMe Qualified Name (e.g. `nqn.2137-04.storage.nasty:tank-vol`). |
 | `ports` | `Port`[] | yes | Transport ports this subsystem is reachable on. |
+
+
+## Guest Shares
+
+### `guestshare.list`
+
+List all guest file shares (including revoked ones). Never returns plaintext tokens.
+
+**Role:** `any`
+
+**Returns:**
+
+``GuestShare`[]`
+
+
+### `guestshare.get`
+
+Fetch a single guest share by id.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Share id (UUID). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | integer | yes | Unix seconds at creation. |
+| `created_by` | string | yes | Username of the operator/admin who created the share. |
+| `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
+| `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
+public surface in a later PR). `None` = never expires. |
+| `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
+| `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
+unlimited. |
+| `note` | string | no | Optional free-text note for the management UI. |
+| `password_hash` | string | no | Argon2 hash of the share password (same hasher as login). `None` =
+no password. |
+| `paths` | string[] | yes | Absolute, canonicalized paths being shared. Each is under `/fs`. |
+| `revoked` | boolean | yes | Whether the share has been revoked. Revoked records are kept (not
+deleted) so history/audit survive. |
+| `token_hash` | string | yes | SHA-256 (lowercase hex) of the URL token. The link is the
+credential; storing only its hash means a state-file leak leaks no
+working links. |
+| `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
+
+
+### `guestshare.create`
+
+Create a guest share for one or more paths under /fs. Returns the plaintext URL token exactly once — only its hash is stored.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `expires_at` | integer | no | Optional expiry, Unix seconds. |
+| `max_downloads` | integer | no | Optional download cap. |
+| `note` | string | no | Optional free-text note. |
+| `password` | string | no | Optional password. When present, hashed with the login Argon2. |
+| `paths` | string[] | yes | One or more absolute paths to share. Each must exist and resolve
+under `/fs`. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `share` | `GuestShare` | yes |  |
+| `token` | string | yes | Plaintext URL token. Show it to the operator now; it cannot be
+recovered later (only its hash is persisted). |
+
+
+### `guestshare.revoke`
+
+Revoke a guest share. The record is kept (marked revoked) so history survives.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Share id (UUID) to revoke. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | integer | yes | Unix seconds at creation. |
+| `created_by` | string | yes | Username of the operator/admin who created the share. |
+| `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
+| `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
+public surface in a later PR). `None` = never expires. |
+| `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
+| `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
+unlimited. |
+| `note` | string | no | Optional free-text note for the management UI. |
+| `password_hash` | string | no | Argon2 hash of the share password (same hasher as login). `None` =
+no password. |
+| `paths` | string[] | yes | Absolute, canonicalized paths being shared. Each is under `/fs`. |
+| `revoked` | boolean | yes | Whether the share has been revoked. Revoked records are kept (not
+deleted) so history/audit survive. |
+| `token_hash` | string | yes | SHA-256 (lowercase hex) of the URL token. The link is the
+credential; storing only its hash means a state-file leak leaks no
+working links. |
+| `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
 
 
 ## OIDC
@@ -7021,6 +7133,29 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `label` | string | no | User-assigned label (e.g. "known good", "stable"). |
 | `nasty_version` | string | no | NASty version baked into this generation (from /etc/nasty-version). |
 | `nixos_version` | string | yes | NixOS version string (e.g. "26.05.20260318.b40629e"). |
+
+### `GuestShare`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | integer | yes | Unix seconds at creation. |
+| `created_by` | string | yes | Username of the operator/admin who created the share. |
+| `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
+| `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
+public surface in a later PR). `None` = never expires. |
+| `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
+| `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
+unlimited. |
+| `note` | string | no | Optional free-text note for the management UI. |
+| `password_hash` | string | no | Argon2 hash of the share password (same hasher as login). `None` =
+no password. |
+| `paths` | string[] | yes | Absolute, canonicalized paths being shared. Each is under `/fs`. |
+| `revoked` | boolean | yes | Whether the share has been revoked. Revoked records are kept (not
+deleted) so history/audit survive. |
+| `token_hash` | string | yes | SHA-256 (lowercase hex) of the URL token. The link is the
+credential; storing only its hash means a state-file leak leaks no
+working links. |
+| `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
 
 ### `HostCert`
 
