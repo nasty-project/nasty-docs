@@ -2188,6 +2188,12 @@ Get an SMB share by ID.
 | `name` | string | yes | Samba share name used in `\\server\name` UNC paths. |
 | `path` | string | yes | Absolute filesystem path being shared (must be under `/fs/`). |
 | `read_only` | boolean | yes | Whether the share is read-only. |
+| `time_machine` | boolean | no | Whether this share is a macOS Time Machine destination. When true the
+share section gets the `vfs_fruit` Time Machine options. Requires an
+authenticated, writable share (not guest, not read-only). |
+| `time_machine_max_size_gib` | integer | no | Optional Time Machine size cap in GiB, written as
+`fruit:time machine max size` so macOS self-limits and thins old
+backups. `None` = no advertised cap (pair with a subvolume quota). |
 | `valid_users` | string[] | yes | Usernames allowed to connect (empty means no restriction beyond authentication). |
 
 
@@ -2209,6 +2215,9 @@ Create an SMB share.
 | `name` | string | yes | Samba share name (1–80 characters, no special characters). |
 | `path` | string | yes | Absolute path to share (must exist and be under `/fs/`). |
 | `read_only` | boolean | no | Whether the share is read-only (default: false). |
+| `time_machine` | boolean | no | Make this a macOS Time Machine destination (default: false). Requires
+an authenticated, writable share. |
+| `time_machine_max_size_gib` | integer | no | Optional Time Machine size cap in GiB. |
 | `valid_users` | string[] | no | Allowed usernames; empty means no per-user restriction. |
 
 **Returns:**
@@ -2224,6 +2233,12 @@ Create an SMB share.
 | `name` | string | yes | Samba share name used in `\\server\name` UNC paths. |
 | `path` | string | yes | Absolute filesystem path being shared (must be under `/fs/`). |
 | `read_only` | boolean | yes | Whether the share is read-only. |
+| `time_machine` | boolean | no | Whether this share is a macOS Time Machine destination. When true the
+share section gets the `vfs_fruit` Time Machine options. Requires an
+authenticated, writable share (not guest, not read-only). |
+| `time_machine_max_size_gib` | integer | no | Optional Time Machine size cap in GiB, written as
+`fruit:time machine max size` so macOS self-limits and thins old
+backups. `None` = no advertised cap (pair with a subvolume quota). |
 | `valid_users` | string[] | yes | Usernames allowed to connect (empty means no restriction beyond authentication). |
 
 
@@ -2245,6 +2260,8 @@ Update an SMB share.
 | `id` | string | yes | ID of the share to update. |
 | `name` | string | no | New share name (optional; must be unique). |
 | `read_only` | boolean | no | Update read-only flag (optional). |
+| `time_machine` | boolean | no | Toggle Time Machine destination (optional). |
+| `time_machine_max_size_gib` | integer | no | Update the Time Machine size cap in GiB (optional). Send 0 to clear. |
 | `valid_users` | string[] | no | Replacement allowed-users list (optional). |
 
 **Returns:**
@@ -2260,6 +2277,12 @@ Update an SMB share.
 | `name` | string | yes | Samba share name used in `\\server\name` UNC paths. |
 | `path` | string | yes | Absolute filesystem path being shared (must be under `/fs/`). |
 | `read_only` | boolean | yes | Whether the share is read-only. |
+| `time_machine` | boolean | no | Whether this share is a macOS Time Machine destination. When true the
+share section gets the `vfs_fruit` Time Machine options. Requires an
+authenticated, writable share (not guest, not read-only). |
+| `time_machine_max_size_gib` | integer | no | Optional Time Machine size cap in GiB, written as
+`fruit:time machine max size` so macOS self-limits and thins old
+backups. `None` = no advertised cap (pair with a subvolume quota). |
 | `valid_users` | string[] | yes | Usernames allowed to connect (empty means no restriction beyond authentication). |
 
 
@@ -2798,6 +2821,10 @@ Fetch a single guest share by id.
 | `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
 | `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
 public surface in a later PR). `None` = never expires. |
+| `hidden` | boolean | no | Soft "removed" — hidden from the default management list while the
+record is kept on disk for audit/history. Only a *revoked* share can
+be hidden (the UI revokes first). `#[serde(default)]` so shares
+written before this field load as not-hidden. |
 | `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
 | `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
 unlimited. |
@@ -2860,6 +2887,10 @@ Revoke a guest share. The record is kept (marked revoked) so history survives.
 | `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
 | `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
 public surface in a later PR). `None` = never expires. |
+| `hidden` | boolean | no | Soft "removed" — hidden from the default management list while the
+record is kept on disk for audit/history. Only a *revoked* share can
+be hidden (the UI revokes first). `#[serde(default)]` so shares
+written before this field load as not-hidden. |
 | `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
 | `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
 unlimited. |
@@ -2873,6 +2904,19 @@ deleted) so history/audit survive. |
 credential; storing only its hash means a state-file leak leaks no
 working links. |
 | `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
+
+
+### `guestshare.remove`
+
+Remove a *revoked* guest share from the management list. The record is kept on disk (hidden) for audit/history; revoke the share first.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Share id (UUID) to remove. Must already be revoked. |
 
 
 ## OIDC
@@ -6302,6 +6346,36 @@ Tear down a compose app via `docker compose down -v --remove-orphans`, delete it
 | `name` | string | yes | Compose app name. |
 
 
+### `apps.compose.set_startup`
+
+Set NASty-managed startup ordering for a compose stack (#437): when managed, the engine forces `restart: "no"` and brings the stack up at boot in the configured order with a settle delay; when unmanaged, the stack reverts to its compose file's own restart policy.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `delay_secs` | integer | no | Seconds to wait after this stack is up before starting the next. |
+| `managed` | boolean | yes | When true, NASty owns this stack's boot startup: it forces
+`restart: "no"` (so Docker won't auto-start it) and brings it up in
+the configured order with the settle delay. When false, the stack
+reverts to its compose file's own restart policy. |
+| `name` | string | yes | Compose stack name. |
+| `order` | integer | no | Position in the ordered boot sequence (ascending; ties by name). |
+
+
+### `apps.compose.startup.list`
+
+List every compose stack's startup config (managed flag, order, delay), sorted by order then name — powers the WebUI's Startup-order view.
+
+**Role:** `any`
+
+**Returns:**
+
+``ComposeStartupEntry`[]`
+
+
 ### `apps.ingress.list`
 
 List all per-app reverse-proxy ingresses currently registered in Caddy (name, host_port, path, optional subdomain).
@@ -6852,6 +6926,15 @@ ends in a `reverse_proxy` handler. `None` for `file_server`,
 Schema-level findings (e.g. an unknown property) often don't. |
 | `message` | string | yes |  |
 
+### `ComposeStartupEntry`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `delay_secs` | integer | yes |  |
+| `managed` | boolean | yes |  |
+| `name` | string | yes |  |
+| `order` | integer | yes |  |
+
 ### `CpuStats`
 
 | Field | Type | Required | Description |
@@ -7143,6 +7226,10 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
 | `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
 public surface in a later PR). `None` = never expires. |
+| `hidden` | boolean | no | Soft "removed" — hidden from the default management list while the
+record is kept on disk for audit/history. Only a *revoked* share can
+be hidden (the UI revokes first). `#[serde(default)]` so shares
+written before this field load as not-hidden. |
 | `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
 | `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
 unlimited. |
@@ -7726,6 +7813,12 @@ to enable a feature they can't. |
 | `name` | string | yes | Samba share name used in `\\server\name` UNC paths. |
 | `path` | string | yes | Absolute filesystem path being shared (must be under `/fs/`). |
 | `read_only` | boolean | yes | Whether the share is read-only. |
+| `time_machine` | boolean | no | Whether this share is a macOS Time Machine destination. When true the
+share section gets the `vfs_fruit` Time Machine options. Requires an
+authenticated, writable share (not guest, not read-only). |
+| `time_machine_max_size_gib` | integer | no | Optional Time Machine size cap in GiB, written as
+`fruit:time machine max size` so macOS self-limits and thins old
+backups. `None` = no advertised cap (pair with a subvolume quota). |
 | `valid_users` | string[] | yes | Usernames allowed to connect (empty means no restriction beyond authentication). |
 
 ### `SmbUser`
