@@ -290,6 +290,23 @@ Return health status of all systemd services.
 | `status` | string | yes | Overall health status string (e.g. `ok`, `degraded`). |
 
 
+### `system.status`
+
+Aggregated system status for the sidebar band (#528): one level (healthy / activity / critical), a headline, the in-progress array operations (device evacuation, scrub, reconcile), and active alert counts. Cached ~10s.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `critical_count` | integer | yes | Number of active critical alerts. |
+| `headline` | string | yes | One-line summary shown in the band. |
+| `level` | string | yes | "healthy" (green) | "activity" (amber) | "critical" (red). |
+| `operations` | `ActiveOperation`[] | yes | Array operations currently running. |
+| `warning_count` | integer | yes | Number of active warning alerts. |
+
+
 ### `system.stats`
 
 Return current CPU, memory, network interface, and disk I/O statistics.
@@ -6539,6 +6556,16 @@ this only seals NASty's state file.) |
 | `severity` | `AlertSeverity` | yes | Severity level of the alert. |
 | `source` | string | yes | Identifier of the specific resource that triggered the alert (e.g. filesystem name, device path). |
 | `threshold` | number | yes | Threshold value configured in the rule. |
+
+### `ActiveOperation`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
+| `fs` | string | yes | Filesystem the operation is running on. |
+| `kind` | string | yes | "evacuate" | "scrub" | "reconcile". |
+| `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
+| `target` | string | no | Device path for an evacuation; `None` otherwise. |
 
 ### `AlertCondition`
 
