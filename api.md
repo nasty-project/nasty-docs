@@ -76,6 +76,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [System TLS](#system-tls)
 - [System NUT (UPS)](#system-nut-ups)
 - [System Passthrough](#system-passthrough)
+- [System Guest Tools](#system-guest-tools)
 - [System Secure Boot](#system-secure-boot)
 - [System SSH](#system-ssh)
 - [System Tailscale](#system-tailscale)
@@ -3548,6 +3549,52 @@ Validate, persist, and regenerate the passthrough Nix snippet from a new vendor:
 |-------|------|:--------:|-------------|
 | `ids` | `DeviceId`[] | yes | (vendor, device) pairs to bind to vfio-pci at boot. Order is
 not significant — we sort+dedupe on save and write. |
+
+
+## System Guest Tools
+
+### `system.guest_tools.status`
+
+Return VM guest-tools state: opt-in flag, detected hypervisor, and the live rebuild state.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes | Persisted opt-in flag. |
+| `hypervisor` | string | yes | Hypervisor reported by `systemd-detect-virt` (e.g. `vmware`,
+`microsoft`, `kvm`, `qemu`, `oracle`, `none`). |
+| `is_vm` | boolean | yes | True when running under any detected hypervisor. |
+| `log_tail` | string | no | Recent rebuild log lines, surfaced while running or on failure. |
+| `rebuild_state` | string | yes | `idle` | `running` | `failed` — state of the most recent
+guest-tools rebuild, read from the transient unit. |
+
+
+### `system.guest_tools.set`
+
+Enable/disable the per-box VM guest integrations (VMware open-vm-tools / Hyper-V), regenerate the Nix overlay, and trigger nixos-rebuild switch to apply without a reboot.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes | Persisted opt-in flag. |
+| `hypervisor` | string | yes | Hypervisor reported by `systemd-detect-virt` (e.g. `vmware`,
+`microsoft`, `kvm`, `qemu`, `oracle`, `none`). |
+| `is_vm` | boolean | yes | True when running under any detected hypervisor. |
+| `log_tail` | string | no | Recent rebuild log lines, surfaced while running or on failure. |
+| `rebuild_state` | string | yes | `idle` | `running` | `failed` — state of the most recent
+guest-tools rebuild, read from the transient unit. |
 
 
 ## System Secure Boot
