@@ -918,6 +918,20 @@ Erase all filesystem signatures from a device (wipefs). The device must not be i
 | `path` | string | yes | Block device path (e.g. /dev/sdb). |
 
 
+### `device.set_type`
+
+Manually override a disk's type (ssd/hdd/nvme), or 'auto' to clear. For VMs where lsblk's rotational bit is wrong. Anchored to a stable by-id/by-path key so it survives reboots and /dev re-lettering.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device_class` | string | yes | `ssd` | `hdd` | `nvme` | `auto`. |
+| `path` | string | yes | Current device path (e.g. `/dev/sda`) — resolved to a stable key. |
+
+
 ## Filesystems
 
 ### `fs.list`
@@ -6889,6 +6903,9 @@ at runtime that rustic_backend reads via its `cacert` option. |
 *external* (whole-filesystem) UUID, so a candidate disk can be
 matched against an existing pool's `Filesystem.uuid` to tell an
 offline/former member apart from a foreign disk (#472). |
+| `id_kind` | string | no | How durable `stable_id` is: `hardware` (by-id, survives re-slot),
+`slot` (by-path, reboot-stable but tied to the VM disk slot), or
+`volatile` (/dev name only — won't survive re-lettering). |
 | `in_use` | boolean | yes | Whether the device is currently in use (mounted, in a filesystem, or has partitions in use). |
 | `model` | string | no | Drive model from lsblk (e.g. "Samsung SSD 970 EVO Plus 1TB"). None
 for partitions and for virtual disks that don't expose a model. |
@@ -6897,7 +6914,12 @@ for partitions and for virtual disks that don't expose a model. |
 | `rotational` | boolean | yes | Whether the underlying disk spins (false for NVMe/SSD, true for HDD). |
 | `serial` | string | no | Drive serial from lsblk. None for partitions and virtual disks. |
 | `size_bytes` | integer | yes | Total capacity in bytes. |
+| `stable_id` | string | no | Stable identity key this disk's type override is anchored to —
+a unique by-id link, a by-path link, or (last resort) the /dev
+name. None for partitions and synthetic "free" entries. (#552) |
 | `transport` | string | no | Transport bus from lsblk (e.g. "sata", "nvme", "usb"). |
+| `type_source` | string | no | `detected` when `device_class` came from lsblk/sysfs, `manual`
+when an operator override is in effect (#552). |
 | `vendor` | string | no | Drive vendor from lsblk (e.g. "ATA", "NVMe"). |
 
 ### `BondConfig`
