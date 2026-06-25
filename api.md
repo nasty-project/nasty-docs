@@ -308,6 +308,17 @@ Aggregated system status for the sidebar band (#528): one level (healthy / activ
 | `warning_count` | integer | yes | Number of active warning alerts. |
 
 
+### `system.operations.list`
+
+List controllable data operations across mounted filesystems for the Operations panel (#553): running scrubs/evacuations (cancellable) and the pausable background jobs reconcile and copygc, each with the action the UI can take.
+
+**Role:** `any`
+
+**Returns:**
+
+``Operation`[]`
+
+
 ### `system.stats`
 
 Return current CPU, memory, network interface, and disk I/O statistics.
@@ -1212,6 +1223,19 @@ New WebUI surfaces should prefer the typed fields above. |
 | `running` | boolean | yes | Whether a scrub is currently in progress. |
 | `started_at` | integer | no | Unix seconds when the current run started. `Some` while
 `running`; cleared on completion. |
+
+
+### `fs.scrub.cancel`
+
+Cancel a running scrub by terminating its bcachefs process (#553).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
 
 
 ### `fs.fsck.start`
@@ -4455,6 +4479,52 @@ Turn off bcachefs background reconcile work on a mounted filesystem by writing `
 | `name` | string | yes | Filesystem name. |
 
 
+### `fs.copygc.enable`
+
+Resume bcachefs copy garbage collection on a mounted filesystem by writing `1` to its sysfs `copygc_enabled` knob (#553).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+
+### `fs.copygc.disable`
+
+Pause bcachefs copy garbage collection on a mounted filesystem by writing `0` to its sysfs `copygc_enabled` knob — the same lever nasty-top's advisor pulls on write-stalls (#553).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+
+### `fs.device.evacuate.cancel`
+
+Cancel a running device evacuation: terminate the bcachefs process and return the device to read-write. Migrated data stays migrated (#553).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | The device to act on: an absolute block-device path (e.g. `/dev/sdb`)
+or, for a missing/dead member with no current path, its numeric
+bcachefs member index. |
+| `filesystem` | string | yes | Name of the filesystem containing the device. |
+| `force` | boolean | no | Force removal even when data/metadata can't be migrated off first —
+required for a *missing* member (the disk is gone, nothing to
+evacuate; safe while enough replicas remain on surviving devices).
+Ignored by non-remove actions. |
+
+
 ## Filesystem Dependents
 
 ### `fs.dependents`
@@ -7642,6 +7712,21 @@ the legacy plaintext `client_secret` when set. |
 | `redirect_uri` | string | no | Absolute redirect URI registered with the IdP (e.g. "https://nasty.local/api/auth/oidc/callback"). |
 | `role_mappings` | `OidcRoleMapping`[] | no | Group → role mappings. Evaluated in order; first match wins. |
 | `scopes` | string[] | no | OAuth scopes to request. Defaults to ["openid","profile","email","groups"]. |
+
+### `Operation`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `control` | string | yes | Action the UI offers: "cancel" (scrub/evacuate) | "pause" |
+"resume" (reconcile/copygc) | "none". |
+| `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
+| `fs` | string | yes | Filesystem the operation belongs to. |
+| `kind` | string | yes | "scrub" | "evacuate" | "reconcile" | "copygc". |
+| `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
+| `state` | string | yes | "running" (scrub/evacuate in flight) | "active" (background job
+working) | "idle" (enabled, not currently working) | "paused"
+(disabled). |
+| `target` | string | no | Device path for an evacuation; `None` otherwise. |
 
 ### `PassthroughDevice`
 
