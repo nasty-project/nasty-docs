@@ -3993,7 +3993,7 @@ Apply a partial update to the tuning configuration, persist it, and reapply the 
 
 ### `system.firewall.status`
 
-Return the current firewall rules and per-service source/interface restrictions.
+Return the current firewall rules, per-service source/interface restrictions, and the host ports Docker-managed apps publish (read-only — these bypass the nftables firewall and are listed for visibility only).
 
 **Role:** `any`
 
@@ -4003,6 +4003,14 @@ Return the current firewall rules and per-service source/interface restrictions.
 |-------|------|:--------:|-------------|
 | `active` | boolean | yes |  |
 | `interface_restrictions` | object | yes | Per-service interface restrictions. |
+| `published_app_ports` | `PublishedAppPort`[] | no | Ports that Docker-managed apps publish on the host. These are NOT
+governed by this firewall — Docker DNATs published ports in
+`prerouting` straight to the container, so they bypass the `inet
+nasty` input chain entirely. Listed here for visibility only, so an
+operator sees the full "what's open on this box" picture in one
+place; their only real gate is the upstream/cloud firewall. The
+engine layer fills this from `apps.list`; the firewall module
+itself has no knowledge of Docker. |
 | `restrictions` | object | yes | Per-service source IP restrictions. |
 | `rules` | `FirewallRule`[] | yes |  |
 
@@ -7427,6 +7435,10 @@ parsing the RFC-2822 expires string client-side. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `app` | string | no | Name of the app whose ingress owns this hostname, when the host
+is an app subdomain (vs. the WebUI's own TLS domain or an
+internal-CA IP). Lets the TLS page label the row so an operator
+can tell at a glance which deployment a stuck cert belongs to. |
 | `expires` | string | no |  |
 | `expires_in_days` | integer | no |  |
 | `host` | string | yes |  |
@@ -7811,6 +7823,15 @@ the device is reserved for explicit binding). |
 | `name` | string | yes | Machine-readable protocol identifier (e.g. `nfs`, `smb`, `iscsi`). |
 | `running` | boolean | yes | Whether the protocol's systemd service is currently active. |
 | `system_service` | boolean | yes | Whether this is a system-level service (SSH, Avahi, SMART) rather than a storage protocol. |
+
+### `PublishedAppPort`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `app` | string | yes | App that published the port. |
+| `container_port` | integer | yes | Container-side port the host port maps to. |
+| `host_port` | integer | yes | Host-side port (bound on 0.0.0.0). |
+| `transport` | string | yes | Transport ("tcp" / "udp"). |
 
 ### `RebuildSnapshot`
 
