@@ -5858,6 +5858,9 @@ Round-tripped through Edit/pull so a reinstall keeps the attachment. |
 | `ports` | `AppPort`[] | yes |  |
 | `static_ip` | string | no | The static IP requested at install (from label), if any. Distinct
 from a live auto-assigned address — re-applied verbatim on reinstall. |
+| `subdomain` | string | no | The app's subdomain-ingress hostname, if any (from the manifest).
+Round-tripped through Edit so changing other fields and saving
+preserves the ingress instead of silently dropping it. |
 | `volumes` | `AppVolume`[] | yes |  |
 
 
