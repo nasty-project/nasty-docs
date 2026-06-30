@@ -2105,6 +2105,28 @@ backing image's allocated size. |
 | `volsize_bytes` | integer | no | Size of the backing sparse image in bytes (block subvolumes only). |
 
 
+### `snapshot.rollback`
+
+Roll a subvolume back to a snapshot: quiesce its apps/VMs/shares, take a safety snapshot of the current state, swap the subvolume to the snapshot, and resume. Destructive; filesystem subvolumes only.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Name of the filesystem containing the snapshot. |
+| `snapshot` | string | yes | Name of the snapshot to roll the subvolume back to. |
+| `subvolume` | string | yes | Name of the parent subvolume to roll back. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `safety_snapshot` | string | yes |  |
+| `subvolume` | `Subvolume` | yes |  |
+
+
 ## NFS Shares
 
 ### `share.nfs.list`
