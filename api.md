@@ -8235,8 +8235,18 @@ doesn't carry an `original` block for). |
 | `interface` | string | no | Disk interface: "virtio" (default), "scsi", "ide". |
 | `iops_rd` | integer | no | I/O throttling: max read IOPS (0 = unlimited). |
 | `iops_wr` | integer | no | I/O throttling: max write IOPS (0 = unlimited). |
-| `path` | string | yes | Disk path — block device (/dev/loopX) or image file. |
+| `path` | string | yes | Disk path — block device (/dev/loopX) or image file.
+
+For block-subvolume disks this is a loop device whose number is
+reassigned on every reboot, so it must never be trusted as a
+stable identifier — `source` is. On start we re-resolve `path`
+from `source` (#592) and heal it if the loop device moved. |
 | `readonly` | boolean | no | Whether this is a read-only disk. |
+| `source` | string | no | Stable backing file for a block-subvolume disk (the losetup
+`BACK-FILE`, e.g. `/fs/tank/vms/foo/vol.img`). Loop device
+numbers shuffle across reboots but the backing file does not, so
+this is what we persist and re-resolve `path` from at start time.
+`None` for plain image-file disks, whose `path` is already stable. |
 
 ### `VmDiskSubvolume`
 
