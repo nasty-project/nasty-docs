@@ -75,6 +75,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [System ACME](#system-acme)
 - [System TLS](#system-tls)
 - [System NUT (UPS)](#system-nut-ups)
+- [System RDMA](#system-rdma)
 - [System Passthrough](#system-passthrough)
 - [System Guest Tools](#system-guest-tools)
 - [System Secure Boot](#system-secure-boot)
@@ -2579,6 +2580,8 @@ Add a listening portal (IP:port) to an iSCSI target. Use 0.0.0.0 for all IPv4 in
 |-------|------|:--------:|-------------|
 | `ip` | string | yes | Listening IP address. `0.0.0.0` for all v4 interfaces, `::` for
 all v6 interfaces, or a specific host address. |
+| `iser` | boolean | no | Enable iSER (iSCSI over RDMA) on this portal. Requires the
+per-box RDMA opt-in (gated in the router). |
 | `port` | integer | yes | TCP port to listen on. Standard iSCSI port is 3260. |
 | `target_id` | string | yes | ID of the target to add the portal to. |
 
@@ -2609,6 +2612,35 @@ Remove a listening portal from an iSCSI target. The last portal cannot be remove
 value exactly (no normalization). |
 | `port` | integer | yes | TCP port of the portal to remove. |
 | `target_id` | string | yes | ID of the target from which to remove the portal. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `acls` | `Acl`[] | yes | Initiator ACL entries controlling which hosts may connect. |
+| `alias` | string | no | Optional human-readable alias for the target. |
+| `enabled` | boolean | yes | Whether the target is currently active in LIO. |
+| `id` | string | yes | Unique target identifier (UUID). |
+| `iqn` | string | yes | iSCSI Qualified Name (e.g. `iqn.2137-04.storage.nasty:tank-vol`). |
+| `luns` | `Lun`[] | yes | Logical units exposed by this target. |
+| `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
+
+
+### `share.iscsi.set_portals`
+
+Replace an iSCSI target's portal set in one call. The engine orders the transition (adds before removes where possible, conflicting adds after), so swapping the wildcard portal for a specific address on the same port works directly — no temporary portal needed.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `portals` | `Portal`[] | yes | Desired complete portal set. Entries missing from this list are
+removed, new ones are added; the engine orders the transition so
+same-port wildcard↔specific swaps work in one call. Must not be
+empty — a target with zero portals is unreachable. |
+| `target_id` | string | yes | ID of the target whose portal set is being replaced. |
 
 **Returns:**
 
@@ -3575,11 +3607,11 @@ Return the live UPS status (charge, runtime, voltage, load, model) as reported b
 | `ups_serial` | string | no | UPS serial number. |
 
 
-## System Passthrough
+## System RDMA
 
-### `system.passthrough.get`
+### `system.rdma.status`
 
-Return the persisted PCI vfio-pci passthrough configuration (vendor:device pairs claimed at boot).
+Return RDMA capability and opt-in state: detected RDMA devices (InfiniBand/RoCE), transport-module availability, and whether nfsd has an RDMA listener.
 
 **Role:** `any`
 
@@ -3587,13 +3619,20 @@ Return the persisted PCI vfio-pci passthrough configuration (vendor:device pairs
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `ids` | `DeviceId`[] | yes | (vendor, device) pairs to bind to vfio-pci at boot. Order is
-not significant — we sort+dedupe on save and write. |
+| `blocker` | string | no | One-line reason the toggle is disabled, when it is. |
+| `capable` | boolean | yes | An RDMA device exists — the gate for flipping the toggle on. |
+| `devices` | `RdmaDevice`[] | yes |  |
+| `enabled` | boolean | yes |  |
+| `ib_isert_available` | boolean | yes | `modprobe -n` dry-run results — informational (the checklist
+shows them); real errors surface at activation time. |
+| `nfs_rdma_active` | boolean | yes | nfsd currently has an `rdma` listener in its portlist. |
+| `nfs_rdma_available` | boolean | yes |  |
+| `nvmet_rdma_available` | boolean | yes |  |
 
 
-### `system.passthrough.update`
+### `system.rdma.set`
 
-Validate, persist, and regenerate the passthrough Nix snippet from a new vendor:device list (reboot required to apply).
+Enable or disable RDMA share transports on this box (per-box opt-in; enabling requires an RDMA-capable device, disabling requires no remaining RDMA ports/portals).
 
 **Role:** `admin`
 
@@ -3601,14 +3640,65 @@ Validate, persist, and regenerate the passthrough Nix snippet from a new vendor:
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `ids` | `DeviceId`[] | yes |  |
+| `enabled` | boolean | yes |  |
 
 **Returns:**
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `ids` | `DeviceId`[] | yes | (vendor, device) pairs to bind to vfio-pci at boot. Order is
-not significant — we sort+dedupe on save and write. |
+| `blocker` | string | no | One-line reason the toggle is disabled, when it is. |
+| `capable` | boolean | yes | An RDMA device exists — the gate for flipping the toggle on. |
+| `devices` | `RdmaDevice`[] | yes |  |
+| `enabled` | boolean | yes |  |
+| `ib_isert_available` | boolean | yes | `modprobe -n` dry-run results — informational (the checklist
+shows them); real errors surface at activation time. |
+| `nfs_rdma_active` | boolean | yes | nfsd currently has an `rdma` listener in its portlist. |
+| `nfs_rdma_available` | boolean | yes |  |
+| `nvmet_rdma_available` | boolean | yes |  |
+
+
+## System Passthrough
+
+### `system.passthrough.get`
+
+Return the persisted PCI vfio-pci passthrough configuration (per-device BDF claims applied at boot).
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `devices` | `PassthroughEntry`[] | no | Per-device claims (authoritative). |
+| `ids` | `DeviceId`[] | no | Legacy vendor:device mirror, derived from `devices` on every
+save. Read by pre-BDF engines after a rollback; read by this
+engine only to migrate old state or absorb rollback-era edits. |
+
+
+### `system.passthrough.update`
+
+Validate, persist, and regenerate the passthrough Nix snippet from a new per-device address list (reboot required to apply).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `addresses` | string[] | no | BDF addresses to claim. The engine records each device's
+vendor:device from sysfs at save time. |
+| `ids` | `DeviceId`[] | no | Legacy pair form — accepted for older clients; resolved to all
+matching live BDFs (the old semantics). Ignored when
+`addresses` is non-empty. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `devices` | `PassthroughEntry`[] | no | Per-device claims (authoritative). |
+| `ids` | `DeviceId`[] | no | Legacy vendor:device mirror, derived from `devices` on every
+save. Read by pre-BDF engines after a rollback; read by this
+engine only to migrate old state or absorb rollback-era edits. |
 
 
 ## System Guest Tools
@@ -7482,6 +7572,17 @@ line, verbatim. `pending` ⇒ None. |
 | `ipv6` | `IpConfig` | no |  |
 | `mtu` | integer | no |  |
 | `name` | string | yes |  |
+| `sriov_num_vfs` | integer | no | SR-IOV: number of virtual functions to create on this physical
+function. `None` = leave the device alone (default; also what
+every pre-SR-IOV config deserializes to). `Some(0)` explicitly
+removes previously-created VFs. Only meaningful on SR-IOV-capable
+devices — `update()` validates against live `sriov_totalvfs`. |
+| `vfs` | `VfConfig`[] | no | SR-IOV: per-VF properties (VLAN, MAC, trust, spoof checking),
+applied by NM via `sriov.vfs` when the PF profile activates —
+the declarative form of `ip link set <pf> vf <n> ...` (#614
+follow-up). Only meaningful alongside `sriov_num_vfs`; indices
+are validated against it. Empty = no per-VF configuration
+(default; also what every pre-existing config deserializes to). |
 
 ### `IommuGroup`
 
@@ -7772,6 +7873,14 @@ working) | "idle" (enabled, not currently working) | "paused"
 | `address` | string | yes | PCI address (e.g. "0000:03:00.0"). |
 | `label` | string | no | Human-readable label (e.g. "NVIDIA RTX 3080"). |
 
+### `PassthroughEntry`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `address` | string | yes | Full BDF address, e.g. `0000:06:00.1`. |
+| `device` | string | yes | Device ID recorded at claim time — display + legacy mirror. |
+| `vendor` | string | yes | Vendor ID recorded at claim time — display + legacy mirror. |
+
 ### `PciDevice`
 
 | Field | Type | Required | Description |
@@ -7796,6 +7905,9 @@ the device is reserved for explicit binding). |
 | `description` | string | yes | Human-readable description from lspci. |
 | `iommu_group` | integer | yes | IOMMU group number. |
 | `vendor_device` | string | yes | Vendor:device ID (e.g. "10de:2206"). |
+| `virtual_function` | boolean | no | Whether this is an SR-IOV virtual function (has a physfn
+parent). VFs are prime passthrough candidates — the host keeps
+the PF and siblings while one VF goes to the VM. |
 
 ### `PcieLink`
 
@@ -7837,6 +7949,10 @@ the device is reserved for explicit binding). |
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `ip` | string | yes | IP address the portal listens on (use `0.0.0.0` for all interfaces). |
+| `iser` | boolean | no | iSER (iSCSI over RDMA) enabled on this portal. Requires the
+per-box RDMA opt-in and an RDMA-capable NIC on the portal's
+address; the router arm gates on both. Defaults false so every
+pre-iSER state file loads unchanged (#602). |
 | `port` | integer | yes | TCP port number (default iSCSI port is 3260). |
 
 ### `ProtocolStatus`
@@ -7857,6 +7973,15 @@ the device is reserved for explicit binding). |
 | `container_port` | integer | yes | Container-side port the host port maps to. |
 | `host_port` | integer | yes | Host-side port (bound on 0.0.0.0). |
 | `transport` | string | yes | Transport ("tcp" / "udp"). |
+
+### `RdmaDevice`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `link_layer` | string | yes | `InfiniBand` or `Ethernet` (RoCE / soft-RoCE), from the first
+port's `link_layer`. |
+| `name` | string | yes | Device name, e.g. `mlx5_0`, `rxe0`. |
+| `netdevs` | string[] | yes | Associated network interfaces, when resolvable. |
 
 ### `RebuildSnapshot`
 
@@ -8214,6 +8339,20 @@ doesn't carry an `original` block for). |
 | `name` | string | yes | Flake input name. |
 | `update` | boolean | no | Whether this input should be refreshed in `flake.lock`. |
 | `url` | string | yes | Replacement URL to write to `/etc/nixos/flake.nix`. |
+
+### `VfConfig`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `index` | integer | yes | VF index (0-based; must be below the configured VF count). |
+| `mac` | string | no | Administrative MAC. Fixed by the PF driver; a guest consuming
+the VF can't change it unless the VF is trusted. |
+| `spoof_check` | boolean | no | Spoof checking — the NIC drops frames whose source MAC doesn't
+match the VF's. Driver default unless set. |
+| `trust` | boolean | no | VF trust — required by some guests for promiscuous mode or
+MAC changes. Off unless set. |
+| `vlan` | integer | no | 802.1Q VLAN (1–4094) the VF's traffic is tagged with on the
+PF, like `ip link set <pf> vf <n> vlan <id>`. Absent = untagged. |
 
 ### `VlanConfig`
 
