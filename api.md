@@ -96,6 +96,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [Subvolumes (continued)](#subvolumes-continued)
 - [SMB Users](#smb-users)
 - [SMB Groups](#smb-groups)
+- [Active Directory](#active-directory)
 - [Backup](#backup)
 - [VMs](#vms)
 - [VM Disk Images](#vm-disk-images)
@@ -4985,6 +4986,108 @@ Remove a user from an SMB group via `gpasswd -d`.
 | `user` | string | yes | Username to remove. |
 
 
+## Active Directory
+
+### `domain.status`
+
+Report AD membership: joined state, realm, trust health (wbinfo -t), DC reachability, and clock skew.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `clock_skew_seconds` | integer | no | Clock skew (seconds, DC minus local) observed via `net ads info`. |
+| `dc_reachable` | boolean | no | Whether a domain controller answered `net ads info` just now. |
+| `idmap_base` | integer | no | The configured idmap base UID, if joined. |
+| `joined` | boolean | yes | Whether the system is currently joined to a domain. |
+| `realm` | string | no | The joined realm, if any. |
+| `trust_ok` | boolean | no | Whether `wbinfo -t` (the domain trust secret) currently checks out. |
+| `workgroup` | string | no | The derived NetBIOS workgroup, if joined. |
+
+
+### `domain.join`
+
+Join an Active Directory domain. Runs preflight (DNS SRV, DC reachability, clock skew) before touching Kerberos; the admin credential is used once over stdin and never stored. Configuration rolls back on any failure.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `idmap_base` | integer | no | Optional base UID for domain user mappings; defaults to `DEFAULT_IDMAP_BASE`. |
+| `ou` | string | no | Optional AD organizational unit to create the computer object in
+(`net ads join`'s `createcomputer=` option). |
+| `password` | string | yes | Password for `username`. Sent to `net ads join` via stdin only —
+never persisted, never placed in argv. |
+| `realm` | string | yes | Active Directory realm to join (e.g. "CORP.EXAMPLE.COM"). |
+| `username` | string | yes | AD account used to authorize the join (needs computer-object create rights). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `clock_skew_seconds` | integer | no | Clock skew (seconds, DC minus local) observed via `net ads info`. |
+| `dc_reachable` | boolean | no | Whether a domain controller answered `net ads info` just now. |
+| `idmap_base` | integer | no | The configured idmap base UID, if joined. |
+| `joined` | boolean | yes | Whether the system is currently joined to a domain. |
+| `realm` | string | no | The joined realm, if any. |
+| `trust_ok` | boolean | no | Whether `wbinfo -t` (the domain trust secret) currently checks out. |
+| `workgroup` | string | no | The derived NetBIOS workgroup, if joined. |
+
+
+### `domain.leave`
+
+Leave the AD domain. With credentials the computer account is removed from AD; with force=true the leave is local-only and the account goes stale.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `force` | boolean | no | Leave locally without contacting a DC, when credentials aren't
+available. The computer account is left behind (stale) in AD. |
+| `password` | string | no | Password for `username`. Sent to `net ads leave` via stdin only. |
+| `username` | string | no | AD account used to authorize the leave (computer-object delete rights). |
+
+
+### `domain.user.list`
+
+Search domain users by account-name prefix (min 2 chars, capped at 50). Live winbind query — domain users are never copied into NASty.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `prefix` | string | yes | Account name prefix to search for. |
+
+**Returns:**
+
+``DomainPrincipal`[]`
+
+
+### `domain.group.list`
+
+Search domain groups by name prefix (min 2 chars, capped at 50).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `prefix` | string | yes | Group name prefix to search for. |
+
+**Returns:**
+
+``DomainPrincipal`[]`
+
+
 ## Backup
 
 ### `backup.status`
@@ -6537,6 +6640,11 @@ Deploy a new compose-based app by writing its docker-compose.yml to disk, pre-cr
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `compose_file` | string | yes | Contents of docker-compose.yml. |
+| `env_file` | string | no | Optional `.env` file contents. Compose reads it from the project
+directory for `${VAR}` substitution and defaults — the deployment
+method Immich/Nextcloud and similar expect. Absent or empty means
+no operator env. NASty's `COMPOSE_PROJECT_NAME` is managed
+separately and prepended automatically. |
 | `name` | string | yes | App name (used as compose project name). |
 
 **Returns:**
@@ -6576,6 +6684,11 @@ Overwrite a compose app's docker-compose.yml, pre-create any newly added bind-mo
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `compose_file` | string | yes | Contents of docker-compose.yml. |
+| `env_file` | string | no | Optional `.env` file contents. Compose reads it from the project
+directory for `${VAR}` substitution and defaults — the deployment
+method Immich/Nextcloud and similar expect. Absent or empty means
+no operator env. NASty's `COMPOSE_PROJECT_NAME` is managed
+separately and prepended automatically. |
 | `name` | string | yes | App name (used as compose project name). |
 
 **Returns:**
@@ -7356,6 +7469,12 @@ the same block device path but have distinct transport flags. |
 | `manufacturer` | string | no |  |
 | `product` | string | no |  |
 | `version` | string | no |  |
+
+### `DomainPrincipal`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | The principal name in `DOMAIN\account` format. |
 
 ### `EncryptedBlob`
 
