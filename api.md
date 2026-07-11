@@ -4115,6 +4115,8 @@ Return the current firewall rules, per-service source/interface restrictions, an
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `active` | boolean | yes |  |
+| `custom_rules` | `CustomRule`[] | no | User-managed custom port rules (issue #620). Rendered into the
+firewall alongside service rules; editable on the Firewall page. |
 | `interface_restrictions` | object | yes | Per-service interface restrictions. |
 | `published_app_ports` | `PublishedAppPort`[] | no | Ports that Docker-managed apps publish on the host. These are NOT
 governed by this firewall — Docker DNATs published ports in
@@ -4141,6 +4143,58 @@ Set per-service source-IP/interface restrictions and rebuild the nftables rules.
 | `interfaces` | string[] | no | Allowed interfaces. Omit to clear. |
 | `service` | string | yes | Service name (nfs, smb, iscsi, …). |
 | `sources` | string[] | no | Allowed source CIDRs. Omit to clear. |
+
+
+### `system.firewall.custom.add`
+
+Open a user-managed TCP/UDP port or contiguous range on the host firewall (issue #620). Rejects ports a NASty service owns; returns { rule, warnings } where warnings flag overlap with a Docker-published port (allowed but redundant).
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | no |  |
+| `from` | integer | yes |  |
+| `iface` | string | no |  |
+| `label` | string | yes |  |
+| `source` | string | no |  |
+| `to` | integer | yes |  |
+| `transport` | `Transport` | yes |  |
+
+
+### `system.firewall.custom.update`
+
+Update a custom firewall port rule by id (full replace of its fields, including the enable/disable toggle). Same validation and { rule, warnings } response as add.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes | Whether the rule is rendered into nft. |
+| `from` | integer | yes | Low port (1–65535). |
+| `id` | string | yes | Custom rule id. |
+| `iface` | string | no | Optional interface name. |
+| `label` | string | yes | Required human label. |
+| `source` | string | no | Optional source IP/CIDR. |
+| `to` | integer | yes | High port; equals from for a single port. |
+| `transport` | string | yes |  |
+
+
+### `system.firewall.custom.remove`
+
+Remove a user-managed custom firewall port rule by id and rebuild the nftables ruleset.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Custom rule id. |
 
 
 ## System Update Channel
@@ -5380,6 +5434,9 @@ from the underlying `BackupError`. |
 | `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
 Reserved for a future progress-reporting hook (rustic exposes a
 callback we don't yet wire); empty in this Phase 1. |
+| `progress_fraction` | number | no | Coarse restore progress as a fraction in `[0.0, 1.0]`. Populated
+only by `Restore` jobs (bytes restored / total). `None` until the
+first progress tick and for non-restore kinds. |
 | `result` | object | no | Engine result payload on success. Shape depends on `kind`:
 JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
 JSON object for `RunBackup`. |
@@ -5402,6 +5459,48 @@ List all snapshots stored in the profile's repository (id, time, hostname, paths
 **Returns:**
 
 ``BackupSnapshot`[]`
+
+
+### `backup.restore`
+
+Restore a whole snapshot into a destination under /fs. Validates the destination (jailed to a mounted filesystem, non-empty destinations require allow_overwrite) then spawns a background Restore job; poll backup.jobs.get for progress_fraction and completion. Returns a BackupJob handle immediately.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `allow_overwrite` | boolean | no | Permit restoring into a non-empty destination (default false). |
+| `dest` | string | yes | Absolute destination path; must resolve under /fs. |
+| `id` | string | yes | Backup profile identifier (identifies the repo + credentials). |
+| `snapshot_id` | string | yes | Snapshot id to restore (from backup.snapshots). |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `created_at` | string | yes | RFC3339 timestamp string. Matches the convention used by
+`BackupRunResult.timestamp` — schemars doesn't derive
+`JsonSchema` for `chrono::DateTime` without an extra feature,
+and we'd rather not pull that in just for log-style timestamps. |
+| `error` | string | no | Operator-facing error message on failure. Display-formatted
+from the underlying `BackupError`. |
+| `finished_at` | string | no |  |
+| `id` | string | yes |  |
+| `kind` | `BackupJobKind` | yes |  |
+| `profile_id` | string | yes |  |
+| `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
+Reserved for a future progress-reporting hook (rustic exposes a
+callback we don't yet wire); empty in this Phase 1. |
+| `progress_fraction` | number | no | Coarse restore progress as a fraction in `[0.0, 1.0]`. Populated
+only by `Restore` jobs (bytes restored / total). `None` until the
+first progress tick and for non-restore kinds. |
+| `result` | object | no | Engine result payload on success. Shape depends on `kind`:
+JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
+JSON object for `RunBackup`. |
+| `started_at` | string | no |  |
+| `state` | `BackupJobState` | yes |  |
 
 
 ### `backup.repo.init`
@@ -5433,6 +5532,9 @@ from the underlying `BackupError`. |
 | `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
 Reserved for a future progress-reporting hook (rustic exposes a
 callback we don't yet wire); empty in this Phase 1. |
+| `progress_fraction` | number | no | Coarse restore progress as a fraction in `[0.0, 1.0]`. Populated
+only by `Restore` jobs (bytes restored / total). `None` until the
+first progress tick and for non-restore kinds. |
 | `result` | object | no | Engine result payload on success. Shape depends on `kind`:
 JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
 JSON object for `RunBackup`. |
@@ -5469,6 +5571,9 @@ from the underlying `BackupError`. |
 | `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
 Reserved for a future progress-reporting hook (rustic exposes a
 callback we don't yet wire); empty in this Phase 1. |
+| `progress_fraction` | number | no | Coarse restore progress as a fraction in `[0.0, 1.0]`. Populated
+only by `Restore` jobs (bytes restored / total). `None` until the
+first progress tick and for non-restore kinds. |
 | `result` | object | no | Engine result payload on success. Shape depends on `kind`:
 JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
 JSON object for `RunBackup`. |
@@ -5522,6 +5627,9 @@ from the underlying `BackupError`. |
 | `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
 Reserved for a future progress-reporting hook (rustic exposes a
 callback we don't yet wire); empty in this Phase 1. |
+| `progress_fraction` | number | no | Coarse restore progress as a fraction in `[0.0, 1.0]`. Populated
+only by `Restore` jobs (bytes restored / total). `None` until the
+first progress tick and for non-restore kinds. |
 | `result` | object | no | Engine result payload on success. Shape depends on `kind`:
 JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
 JSON object for `RunBackup`. |
@@ -7119,6 +7227,9 @@ from the underlying `BackupError`. |
 | `progress` | string | no | Free-form operator-facing message surfaced while the job runs.
 Reserved for a future progress-reporting hook (rustic exposes a
 callback we don't yet wire); empty in this Phase 1. |
+| `progress_fraction` | number | no | Coarse restore progress as a fraction in `[0.0, 1.0]`. Populated
+only by `Restore` jobs (bytes restored / total). `None` until the
+first progress tick and for non-restore kinds. |
 | `result` | object | no | Engine result payload on success. Shape depends on `kind`:
 JSON string for `InitRepo` / `CheckRepo`, `BackupRunResult`
 JSON object for `RunBackup`. |
@@ -7127,7 +7238,7 @@ JSON object for `RunBackup`. |
 
 ### `BackupJobKind`
 
-Enum: `init_repo`, `run_backup`, `check_repo`
+Enum: `init_repo`, `run_backup`, `check_repo`, `restore`
 
 ### `BackupJobState`
 
@@ -7359,6 +7470,20 @@ systems; better signal than `lscpu --max`). |
 | `model` | string | no |  |
 | `physical_cores` | integer | yes |  |
 | `vendor` | string | no |  |
+
+### `CustomRule`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+| `from` | integer | yes | Low port of the range (== `to` for a single port). |
+| `id` | string | yes | Engine-generated opaque id (UUID). Stable across label edits; used as
+the nft comment so free-text never enters the ruleset. |
+| `iface` | string | no |  |
+| `label` | string | yes | Required human label ("Plex (host mode)"). UI only. |
+| `source` | string | no |  |
+| `to` | integer | yes | High port of the range. |
+| `transport` | `Transport` | yes |  |
 
 ### `DeviceId`
 
