@@ -97,6 +97,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [SMB Users](#smb-users)
 - [SMB Groups](#smb-groups)
 - [Active Directory](#active-directory)
+- [Active Directory: Domain Controller](#active-directory:-domain-controller)
 - [Backup](#backup)
 - [VMs](#vms)
 - [VM Disk Images](#vm-disk-images)
@@ -777,7 +778,7 @@ List all protocols and their current status.
 
 Enable a protocol service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `ssh`, `avahi`, `smart`.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -800,7 +801,7 @@ Enable a protocol service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `ss
 
 Disable a protocol service.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2169,7 +2170,7 @@ Get an NFS share by ID.
 
 Create an NFS share.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2195,7 +2196,7 @@ Create an NFS share.
 
 Update an NFS share.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2221,7 +2222,7 @@ Update an NFS share.
 
 Delete an NFS share.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2281,7 +2282,7 @@ backups. `None` = no advertised cap (pair with a subvolume quota). |
 
 Create an SMB share.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2326,7 +2327,7 @@ backups. `None` = no advertised cap (pair with a subvolume quota). |
 
 Update an SMB share.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2370,7 +2371,7 @@ backups. `None` = no advertised cap (pair with a subvolume quota). |
 
 Delete an SMB share.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2421,7 +2422,7 @@ Get an iSCSI target by ID.
 
 Create an iSCSI target. Optionally attach a LUN and ACLs in one call.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2452,7 +2453,7 @@ automatically created and the target is ready for connections. |
 
 Delete an iSCSI target.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2465,7 +2466,7 @@ Delete an iSCSI target.
 
 Add a LUN to an iSCSI target.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2493,7 +2494,7 @@ Add a LUN to an iSCSI target.
 
 Remove a LUN from an iSCSI target.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2519,7 +2520,7 @@ Remove a LUN from an iSCSI target.
 
 Allow an iSCSI initiator IQN to connect.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2547,7 +2548,7 @@ Allow an iSCSI initiator IQN to connect.
 
 Remove an iSCSI initiator ACL.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2573,7 +2574,7 @@ Remove an iSCSI initiator ACL.
 
 Add a listening portal (IP:port) to an iSCSI target. Use 0.0.0.0 for all IPv4 interfaces, :: for all IPv6 interfaces, or a specific host address.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2603,7 +2604,7 @@ per-box RDMA opt-in (gated in the router). |
 
 Remove a listening portal from an iSCSI target. The last portal cannot be removed; add a replacement first.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2698,7 +2699,7 @@ Get an NVMe-oF subsystem by ID.
 
 Create an NVMe-oF subsystem. Optionally attach a namespace, port, and host ACLs in one call.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2730,7 +2731,7 @@ automatically created. |
 
 Delete an NVMe-oF subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2743,7 +2744,7 @@ Delete an NVMe-oF subsystem.
 
 Add a namespace (block device) to a subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2769,7 +2770,7 @@ Add a namespace (block device) to a subsystem.
 
 Remove a namespace from a subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2795,7 +2796,7 @@ Remove a namespace from a subsystem.
 
 Add a transport port to a subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2824,7 +2825,7 @@ Add a transport port to a subsystem.
 
 Remove a transport port from a subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2850,7 +2851,7 @@ Remove a transport port from a subsystem.
 
 Allow a host NQN to connect to a subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -2876,7 +2877,7 @@ Allow a host NQN to connect to a subsystem.
 
 Disallow a host NQN from a subsystem.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -5140,6 +5141,237 @@ Search domain groups by name prefix (min 2 chars, capped at 50).
 **Returns:**
 
 ``DomainPrincipal`[]`
+
+
+## Active Directory: Domain Controller
+
+### `dc.status`
+
+Report this box's Domain Controller role: hosting state, realm, workgroup, DNS forwarder, and samba-dc.service health.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `dns_forwarder` | string | no |  |
+| `hosting` | boolean | yes |  |
+| `realm` | string | no |  |
+| `service_healthy` | boolean | yes | Whether samba-dc.service is active. Meaningful only when hosting. |
+| `workgroup` | string | no |  |
+
+
+### `dc.provision`
+
+Provision a brand-new Active Directory domain on this box (Samba AD DC, internal DNS). Exactly one DC per domain; refuses when the box is domain-joined. The Administrator password is set over stdin and never logged. Returns { status, warnings }.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `admin_password` | string | yes | Administrator password. Set via samba-tool over stdin; never argv,
+never logged, never persisted. |
+| `dns_forwarder` | string | no | Upstream DNS the DC forwards non-domain queries to. Defaults to the
+box's current upstream resolver. |
+| `realm` | string | yes | Kerberos realm / DNS zone for the new domain, e.g. "ad.example.lan". |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `status` | object | yes |  |
+| `warnings` | string[] | yes | Operator-facing warnings surfaced during provisioning (e.g. externally-managed network config). |
+
+
+### `dc.demote`
+
+Demote the DC — DESTROYS the hosted domain (typed-realm confirmation required). Takes a final domain backup into /fs when a filesystem exists, then tears the role down.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `realm_confirmation` | string | yes | Must exactly match the hosted realm — demoting DESTROYS the domain. |
+
+
+### `dc.backup`
+
+Run `samba-tool domain backup offline` into a /fs-jailed directory and return the tarball path. Ship it offsite with a backup profile.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `dest` | string | yes | Backup target directory; must resolve under /fs and be empty or absent. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `path` | string | yes | Path to the written backup tarball. |
+
+
+### `dc.user.list`
+
+List domain users (Admin — enumerates the hosted directory).
+
+**Role:** `admin`
+
+**Returns:**
+
+``DcPrincipal`[]`
+
+
+### `dc.user.create`
+
+Create a domain user via `samba-tool user create`. The password is fed over stdin (prompt + confirmation) — never argv, never logged.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `given_name` | string | no | Optional given (first) name. |
+| `name` | string | yes | Domain username (sAMAccountName). |
+| `password` | string | yes | Initial password. Sent over stdin — never argv, never logged. |
+| `surname` | string | no | Optional surname (last) name. |
+
+
+### `dc.user.delete`
+
+Delete a domain user via `samba-tool user delete`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Domain username to delete. |
+
+
+### `dc.user.set_password`
+
+Reset a domain user's password via `samba-tool user setpassword`. Sent over stdin — never argv, never logged.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Domain username. |
+| `password` | string | yes | New password. Sent over stdin — never argv, never logged. |
+
+
+### `dc.user.enable`
+
+Enable a previously disabled domain user account via `samba-tool user enable`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Domain username to enable. |
+
+
+### `dc.user.disable`
+
+Disable a domain user account via `samba-tool user disable` — the account remains but cannot authenticate.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Domain username to disable. |
+
+
+### `dc.group.list`
+
+List domain groups (Admin — enumerates the hosted directory).
+
+**Role:** `admin`
+
+**Returns:**
+
+``DcPrincipal`[]`
+
+
+### `dc.group.create`
+
+Create a domain security group via `samba-tool group add`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Domain group name to create. |
+
+
+### `dc.group.delete`
+
+Delete a domain group via `samba-tool group delete`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Domain group name to delete. |
+
+
+### `dc.group.add_member`
+
+Add a member to a domain group via `samba-tool group addmembers`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `group` | string | yes | Domain group name. |
+| `member` | string | yes | Username to add to the group. |
+
+
+### `dc.group.remove_member`
+
+Remove a member from a domain group via `samba-tool group removemembers`.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `group` | string | yes | Domain group name. |
+| `member` | string | yes | Username to remove from the group. |
+
+
+### `dc.computer.list`
+
+List joined computers (Admin — enumerates the hosted directory).
+
+**Role:** `admin`
+
+**Returns:**
+
+``DcPrincipal`[]`
 
 
 ## Backup
@@ -7485,6 +7717,12 @@ the nft comment so free-text never enters the ruleset. |
 | `to` | integer | yes | High port of the range. |
 | `transport` | `Transport` | yes |  |
 
+### `DcPrincipal`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes |  |
+
 ### `DeviceId`
 
 | Field | Type | Required | Description |
@@ -8186,6 +8424,8 @@ the PF and siblings while one VF goes to the VM. |
 | `iface` | string | no | Optional interface restriction (e.g. "tailscale0"). |
 | `port` | integer | yes |  |
 | `source` | string | no | Optional source IP/CIDR restriction (e.g. "192.168.1.0/24"). |
+| `to` | integer | no | Optional end of a contiguous port range (`port`..=`to`). `None`
+means a single port. First used by the DC role's dynamic-RPC range. |
 | `transport` | `Transport` | yes |  |
 
 ### `Portal`
