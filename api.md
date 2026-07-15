@@ -313,7 +313,7 @@ Aggregated system status for the sidebar band (#528): one level (healthy / activ
 
 ### `system.operations.list`
 
-List controllable data operations across mounted filesystems for the Operations panel (#553): running scrubs/evacuations (cancellable) and the pausable background jobs reconcile and copygc, each with the action the UI can take.
+List controllable data operations across mounted filesystems for the Operations panel (#553): per-pool scrubs (start when idle, cancel when running), device evacuations (cancel while draining, with an idle acknowledgement when none run), and the pausable background jobs reconcile and copygc, each with the action the UI can take.
 
 **Role:** `any`
 
@@ -8337,8 +8337,8 @@ the legacy plaintext `client_secret` when set. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `control` | string | yes | Action the UI offers: "cancel" (scrub/evacuate) | "pause" |
-"resume" (reconcile/copygc) | "none". |
+| `control` | string | yes | Action the UI offers: "start" (idle scrub) | "cancel"
+(scrub/evacuate) | "pause" | "resume" (reconcile/copygc) | "none". |
 | `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
 | `fs` | string | yes | Filesystem the operation belongs to. |
 | `kind` | string | yes | "scrub" | "evacuate" | "reconcile" | "copygc". |
