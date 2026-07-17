@@ -322,6 +322,21 @@ List controllable data operations across mounted filesystems for the Operations 
 ``Operation`[]`
 
 
+### `system.custom_config.get`
+
+Read /etc/nixos/custom.nix — the operator's own NixOS overlay (advanced, edited from the terminal). Returns whether the file exists and its contents for a read-only WebUI view; NASty never writes this file, so anything in it survives upgrades.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `content` | string | yes | File contents (empty when absent). |
+| `exists` | boolean | yes | Whether the file currently exists. |
+| `path` | string | yes | Absolute path of the overlay file. |
+
+
 ### `system.stats`
 
 Return current CPU, memory, network interface, and disk I/O statistics.
