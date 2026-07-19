@@ -4122,7 +4122,7 @@ Apply a partial update to the tuning configuration, persist it, and reapply the 
 
 ### `system.firewall.status`
 
-Return the current firewall rules, per-service source/interface restrictions, and the host ports Docker-managed apps publish (read-only — these bypass the nftables firewall and are listed for visibility only).
+Return the current firewall rules, per-service source/interface restrictions, and Docker-managed app ports allowed by the forward policy.
 
 **Role:** `any`
 
@@ -4134,14 +4134,9 @@ Return the current firewall rules, per-service source/interface restrictions, an
 | `custom_rules` | `CustomRule`[] | no | User-managed custom port rules (issue #620). Rendered into the
 firewall alongside service rules; editable on the Firewall page. |
 | `interface_restrictions` | object | yes | Per-service interface restrictions. |
-| `published_app_ports` | `PublishedAppPort`[] | no | Ports that Docker-managed apps publish on the host. These are NOT
-governed by this firewall — Docker DNATs published ports in
-`prerouting` straight to the container, so they bypass the `inet
-nasty` input chain entirely. Listed here for visibility only, so an
-operator sees the full "what's open on this box" picture in one
-place; their only real gate is the upstream/cloud firewall. The
-engine layer fills this from `apps.list`; the firewall module
-itself has no knowledge of Docker. |
+| `published_app_ports` | `PublishedAppPort`[] | no | Ports that Docker-managed apps publish on the host. The firewall's
+early forward hook permits these explicitly by original DNAT port and
+drops other original-direction inbound DNAT traffic. |
 | `restrictions` | object | yes | Per-service source IP restrictions. |
 | `rules` | `FirewallRule`[] | yes |  |
 
