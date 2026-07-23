@@ -1681,8 +1681,12 @@ Get a single subvolume.
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -1716,6 +1720,8 @@ Create a new bcachefs subvolume (filesystem or block-backed).
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `background_target` | string | no | Device or label for background moves/recompression (overrides filesystem default). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Initialize this filesystem inside a newly-created block image. Ignored
+for an existing destination; existing data is never reformatted. |
 | `comments` | string | no | Optional description for the subvolume. |
 | `compression` | string | no | Compression algorithm to set on the subvolume (e.g. `lz4`, `zstd`). |
 | `data_replicas` | integer | no | Number of data replicas for this subvolume (overrides filesystem default). |
@@ -1735,8 +1741,12 @@ Create a new bcachefs subvolume (filesystem or block-backed).
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -1793,8 +1803,12 @@ Attach the loop device for a block subvolume (mounts `vol.img` via losetup).
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -1837,8 +1851,12 @@ Detach the loop device for a block subvolume.
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -1882,8 +1900,12 @@ Resize a block subvolume's backing image.
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -1927,8 +1949,12 @@ Set arbitrary key-value metadata on a subvolume (stored as POSIX xattrs in the `
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -1972,8 +1998,12 @@ Remove specific metadata keys from a subvolume.
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -2099,8 +2129,12 @@ Clone a snapshot into a new independent subvolume.
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -4829,8 +4863,12 @@ Create a writable COW clone of a subvolume by taking a non-read-only bcachefs sn
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -4880,8 +4918,12 @@ Update mutable subvolume attributes (compression, comments, foreground/backgroun
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
@@ -6683,7 +6725,7 @@ still rejected even with this set. |
 | `env` | `AppEnv`[] | no | Environment variables. |
 | `image` | string | yes | Container image (e.g. "lscr.io/linuxserver/plex:latest"). |
 | `memory_limit` | string | no | Memory limit (e.g. "256m", "1g"). |
-| `name` | string | yes | App name. Must be DNS-safe. |
+| `name` | string | yes | App name matching `[a-z0-9][a-z0-9_-]{0,62}`. |
 | `network` | string | no | Attach the container to a NASty-managed Docker network instead of
 (only) the default bridge. For a macvlan/ipvlan network the
 container gets its own LAN IP and is *not* reachable at
@@ -6748,7 +6790,7 @@ still rejected even with this set. |
 | `env` | `AppEnv`[] | no | Environment variables. |
 | `image` | string | yes | Container image (e.g. "lscr.io/linuxserver/plex:latest"). |
 | `memory_limit` | string | no | Memory limit (e.g. "256m", "1g"). |
-| `name` | string | yes | App name. Must be DNS-safe. |
+| `name` | string | yes | App name matching `[a-z0-9][a-z0-9_-]{0,62}`. |
 | `network` | string | no | Attach the container to a NASty-managed Docker network instead of
 (only) the default bridge. For a macvlan/ipvlan network the
 container gets its own LAN IP and is *not* reachable at
@@ -6995,7 +7037,7 @@ directory for `${VAR}` substitution and defaults — the deployment
 method Immich/Nextcloud and similar expect. Absent or empty means
 no operator env. NASty's `COMPOSE_PROJECT_NAME` is managed
 separately and prepended automatically. |
-| `name` | string | yes | App name (used as compose project name). |
+| `name` | string | yes | App name matching `[a-z0-9][a-z0-9_-]{0,62}` (used as compose project name). |
 
 **Returns:**
 
@@ -7039,7 +7081,7 @@ directory for `${VAR}` substitution and defaults — the deployment
 method Immich/Nextcloud and similar expect. Absent or empty means
 no operator env. NASty's `COMPOSE_PROJECT_NAME` is managed
 separately and prepended automatically. |
-| `name` | string | yes | App name (used as compose project name). |
+| `name` | string | yes | App name matching `[a-z0-9][a-z0-9_-]{0,62}` (used as compose project name). |
 
 **Returns:**
 
@@ -7580,6 +7622,10 @@ name. None for partitions and synthetic "free" entries. (#552) |
 | `type_source` | string | no | `detected` when `device_class` came from lsblk/sysfs, `manual`
 when an operator override is in effect (#552). |
 | `vendor` | string | no | Drive vendor from lsblk (e.g. "ATA", "NVMe"). |
+
+### `BlockFilesystem`
+
+Enum: `ext3`, `ext4`, `xfs`
 
 ### `BondConfig`
 
@@ -8703,8 +8749,12 @@ see template note above. |
 | `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
 Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
 | `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
 | `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
 | `name` | string | yes | Subvolume name (unique within the filesystem). |
