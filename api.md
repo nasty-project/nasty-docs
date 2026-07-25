@@ -107,7 +107,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 
 ### `auth.me`
 
-Return the current session's username and role.
+Return the current session's username, role, and whether its credential is resource-scoped.
 
 **Role:** `any`
 
@@ -115,13 +115,8 @@ Return the current session's username and role.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `client_ip` | string | no | Client IP that created this session. Requests from other IPs are rejected. |
-| `created_at` | integer | yes | Unix timestamp when this session was created. |
-| `filesystem` | string | no | For API tokens: restricts filesystem visibility to a single filesystem. |
-| `must_change_password` | boolean | no | When true, the user must change their password before doing anything else. |
-| `owner` | string | no | For API tokens: only subvolumes with this owner are visible/manageable. |
 | `role` | `Role` | yes |  |
-| `token` | string | yes |  |
+| `scoped` | boolean | yes |  |
 | `username` | string | yes |  |
 
 
@@ -2084,6 +2079,7 @@ Create a snapshot of a subvolume.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `block_device` | string | no | Loop device path if this snapshot's vol.img is currently attached (block snapshots only). |
+| `created_at` | integer | no | Authoritative bcachefs subvolume creation time as Unix epoch seconds. |
 | `filesystem` | string | yes | Name of the filesystem that contains this snapshot. |
 | `name` | string | yes | Snapshot name (unique within the parent subvolume). |
 | `parent` | string | no | Parent subvolume path as tracked by bcachefs (from snapshot_parent). |
@@ -2954,18 +2950,18 @@ Disallow a host NQN from a subsystem.
 
 List all guest file shares (including revoked ones). Never returns plaintext tokens.
 
-**Role:** `any`
+**Role:** `operator`
 
 **Returns:**
 
-``GuestShare`[]`
+``GuestShareInfo`[]`
 
 
 ### `guestshare.get`
 
 Fetch a single guest share by id.
 
-**Role:** `any`
+**Role:** `operator`
 
 **Params:**
 
@@ -2977,28 +2973,18 @@ Fetch a single guest share by id.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `created_at` | integer | yes | Unix seconds at creation. |
-| `created_by` | string | yes | Username of the operator/admin who created the share. |
-| `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
-| `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
-public surface in a later PR). `None` = never expires. |
-| `hidden` | boolean | no | Soft "removed" — hidden from the default management list while the
-record is kept on disk for audit/history. Only a *revoked* share can
-be hidden (the UI revokes first). `#[serde(default)]` so shares
-written before this field load as not-hidden. |
-| `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
-| `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
-unlimited. |
-| `note` | string | no | Optional free-text note for the management UI. |
-| `password_hash` | string | no | Argon2 hash of the share password (same hasher as login). `None` =
-no password. |
-| `paths` | string[] | yes | Absolute, canonicalized paths being shared. Each is under `/fs`. |
-| `revoked` | boolean | yes | Whether the share has been revoked. Revoked records are kept (not
-deleted) so history/audit survive. |
-| `token_hash` | string | yes | SHA-256 (lowercase hex) of the URL token. The link is the
-credential; storing only its hash means a state-file leak leaks no
-working links. |
-| `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
+| `created_at` | integer | yes |  |
+| `created_by` | string | yes |  |
+| `downloads` | integer | yes |  |
+| `expires_at` | integer | no |  |
+| `hidden` | boolean | yes |  |
+| `id` | string | yes |  |
+| `max_downloads` | integer | no |  |
+| `names` | string[] | yes |  |
+| `note` | string | no |  |
+| `password_protected` | boolean | yes |  |
+| `revoked` | boolean | yes |  |
+| `views` | integer | yes |  |
 
 
 ### `guestshare.create`
@@ -3022,7 +3008,7 @@ under `/fs`. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `share` | `GuestShare` | yes |  |
+| `share` | `GuestShareInfo` | yes |  |
 | `token` | string | yes | Plaintext URL token. Show it to the operator now; it cannot be
 recovered later (only its hash is persisted). |
 
@@ -3043,28 +3029,18 @@ Revoke a guest share. The record is kept (marked revoked) so history survives.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `created_at` | integer | yes | Unix seconds at creation. |
-| `created_by` | string | yes | Username of the operator/admin who created the share. |
-| `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
-| `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
-public surface in a later PR). `None` = never expires. |
-| `hidden` | boolean | no | Soft "removed" — hidden from the default management list while the
-record is kept on disk for audit/history. Only a *revoked* share can
-be hidden (the UI revokes first). `#[serde(default)]` so shares
-written before this field load as not-hidden. |
-| `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
-| `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
-unlimited. |
-| `note` | string | no | Optional free-text note for the management UI. |
-| `password_hash` | string | no | Argon2 hash of the share password (same hasher as login). `None` =
-no password. |
-| `paths` | string[] | yes | Absolute, canonicalized paths being shared. Each is under `/fs`. |
-| `revoked` | boolean | yes | Whether the share has been revoked. Revoked records are kept (not
-deleted) so history/audit survive. |
-| `token_hash` | string | yes | SHA-256 (lowercase hex) of the URL token. The link is the
-credential; storing only its hash means a state-file leak leaks no
-working links. |
-| `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
+| `created_at` | integer | yes |  |
+| `created_by` | string | yes |  |
+| `downloads` | integer | yes |  |
+| `expires_at` | integer | no |  |
+| `hidden` | boolean | yes |  |
+| `id` | string | yes |  |
+| `max_downloads` | integer | no |  |
+| `names` | string[] | yes |  |
+| `note` | string | no |  |
+| `password_protected` | boolean | yes |  |
+| `revoked` | boolean | yes |  |
+| `views` | integer | yes |  |
 
 
 ### `guestshare.remove`
@@ -8044,32 +8020,22 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `nasty_version` | string | no | NASty version baked into this generation (from /etc/nasty-version). |
 | `nixos_version` | string | yes | NixOS version string (e.g. "26.05.20260318.b40629e"). |
 
-### `GuestShare`
+### `GuestShareInfo`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `created_at` | integer | yes | Unix seconds at creation. |
-| `created_by` | string | yes | Username of the operator/admin who created the share. |
-| `downloads` | integer | yes | Downloads served so far. Always 0 in this PR (no public surface yet). |
-| `expires_at` | integer | no | Unix seconds after which the share stops working (enforced by the
-public surface in a later PR). `None` = never expires. |
-| `hidden` | boolean | no | Soft "removed" — hidden from the default management list while the
-record is kept on disk for audit/history. Only a *revoked* share can
-be hidden (the UI revokes first). `#[serde(default)]` so shares
-written before this field load as not-hidden. |
-| `id` | string | yes | Unique share identifier (UUID) — also the on-disk filename. |
-| `max_downloads` | integer | no | Maximum number of downloads before the share stops working. `None` =
-unlimited. |
-| `note` | string | no | Optional free-text note for the management UI. |
-| `password_hash` | string | no | Argon2 hash of the share password (same hasher as login). `None` =
-no password. |
-| `paths` | string[] | yes | Absolute, canonicalized paths being shared. Each is under `/fs`. |
-| `revoked` | boolean | yes | Whether the share has been revoked. Revoked records are kept (not
-deleted) so history/audit survive. |
-| `token_hash` | string | yes | SHA-256 (lowercase hex) of the URL token. The link is the
-credential; storing only its hash means a state-file leak leaks no
-working links. |
-| `views` | integer | yes | Metadata views so far. Always 0 in this PR. |
+| `created_at` | integer | yes |  |
+| `created_by` | string | yes |  |
+| `downloads` | integer | yes |  |
+| `expires_at` | integer | no |  |
+| `hidden` | boolean | yes |  |
+| `id` | string | yes |  |
+| `max_downloads` | integer | no |  |
+| `names` | string[] | yes |  |
+| `note` | string | no |  |
+| `password_protected` | boolean | yes |  |
+| `revoked` | boolean | yes |  |
+| `views` | integer | yes |  |
 
 ### `HostCert`
 
@@ -8725,6 +8691,7 @@ backups. `None` = no advertised cap (pair with a subvolume quota). |
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `block_device` | string | no | Loop device path if this snapshot's vol.img is currently attached (block snapshots only). |
+| `created_at` | integer | no | Authoritative bcachefs subvolume creation time as Unix epoch seconds. |
 | `filesystem` | string | yes | Name of the filesystem that contains this snapshot. |
 | `name` | string | yes | Snapshot name (unique within the parent subvolume). |
 | `parent` | string | no | Parent subvolume path as tracked by bcachefs (from snapshot_parent). |
