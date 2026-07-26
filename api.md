@@ -115,6 +115,7 @@ Return the current session's username, role, and whether its credential is resou
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `file_principal` | string | no |  |
 | `role` | `Role` | yes |  |
 | `scoped` | boolean | yes |  |
 | `username` | string | yes |  |
@@ -151,6 +152,8 @@ Create a new local user account.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `file_principal` | string | no | Required SMB/local or domain principal for Role::User; omitted for
+management roles. |
 | `password` | string | yes | Initial password for the new user. |
 | `role` | `Role` | yes | Role to assign to the new user. |
 | `username` | string | yes | Login username for the new user. |
@@ -608,6 +611,9 @@ Return current system settings.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `clock_24h` | boolean | no | Whether to display clocks in 24-hour format. |
+| `files_domain` | string | no | Optional hostname presenting the Role User files portal. This is
+routing/presentation only; server-side Role User authorization remains
+the security boundary for every portal operation. |
 | `hostname` | string | no | System hostname. |
 | `oidc` | `OidcSettings` | no | OpenID Connect single-sign-on configuration. Disabled by default. |
 | `telemetry_enabled` | boolean | no | Whether anonymous telemetry is enabled (drive count, storage capacity). |
@@ -660,6 +666,7 @@ Update system settings. Only provided fields are changed.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `clock_24h` | boolean | no | Whether to use 24-hour clock display (optional). |
+| `files_domain` | string | no | Optional files portal FQDN (set to empty string to clear). |
 | `hostname` | string | no | New hostname to set (optional). |
 | `telemetry_enabled` | boolean | no | Enable/disable anonymous telemetry. |
 | `temp_unit` | `TempUnit` \| null | no | Display unit for temperatures (optional). |
@@ -679,6 +686,9 @@ Update system settings. Only provided fields are changed.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `clock_24h` | boolean | no | Whether to display clocks in 24-hour format. |
+| `files_domain` | string | no | Optional hostname presenting the Role User files portal. This is
+routing/presentation only; server-side Role User authorization remains
+the security boundary for every portal operation. |
 | `hostname` | string | no | System hostname. |
 | `oidc` | `OidcSettings` | no | OpenID Connect single-sign-on configuration. Disabled by default. |
 | `telemetry_enabled` | boolean | no | Whether anonymous telemetry is enabled (drive count, storage capacity). |
@@ -3264,6 +3274,23 @@ Return the most recent audit-log entries (default 200, capped by `limit`), parse
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `limit` | integer | no | Maximum number of entries to return. |
+
+**Returns:**
+
+`object[]`
+
+
+### `audit.mine`
+
+Return only the current authenticated user's recent structured audit entries, filtered server-side before the bounded limit is applied.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `limit` | integer | no |  |
 
 **Returns:**
 
@@ -8364,6 +8391,9 @@ the legacy plaintext `client_secret` when set. |
 | `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
 | `fs` | string | yes | Filesystem the operation belongs to. |
 | `kind` | string | yes | "scrub" | "evacuate" | "reconcile" | "copygc". |
+| `last_duration_secs` | integer | no | Duration of the most recent scrub in seconds; scrub rows only. |
+| `last_outcome` | string | no | "ok" | "errors" | "failed" | "cancelled"; scrub rows only. |
+| `last_run_at` | integer | no | Unix seconds when the most recent scrub completed; scrub rows only. |
 | `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
 | `state` | string | yes | "running" (scrub/evacuate in flight) | "active" (background job
 working) | "idle" (enabled, not currently working) | "paused"
@@ -8820,6 +8850,7 @@ without the `0x` prefix to match `lsusb` formatting. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `file_principal` | string | no |  |
 | `role` | `Role` | yes |  |
 | `username` | string | yes |  |
 | `webauthn_credential_count` | integer | no | How many WebAuthn credentials are registered to this user.
