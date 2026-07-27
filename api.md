@@ -1688,6 +1688,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -1748,6 +1749,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -1810,6 +1812,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -1858,6 +1861,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -1907,6 +1911,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -1956,6 +1961,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -2005,6 +2011,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -2137,6 +2144,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -4774,6 +4782,7 @@ Return all downstream entities (subvolumes, apps, VMs, backup jobs, NFS/SMB/iSCS
 | `nfs_shares` | string[] | yes |  |
 | `nvmeof_subsystems` | string[] | yes |  |
 | `smb_shares` | string[] | yes |  |
+| `state_errors` | string[] | yes |  |
 | `subvolumes` | string[] | yes |  |
 | `vms` | string[] | yes |  |
 
@@ -4868,6 +4877,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -4923,6 +4933,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -7630,6 +7641,13 @@ when an operator override is in effect (#552). |
 
 Enum: `ext3`, `ext4`, `xfs`
 
+### `BlockVolumeId`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem_uuid` | string | yes |  |
+| `subvolume_id` | integer | yes |  |
+
 ### `BondConfig`
 
 | Field | Type | Required | Description |
@@ -8027,6 +8045,7 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `nfs_shares` | string[] | yes |  |
 | `nvmeof_subsystems` | string[] | yes |  |
 | `smb_shares` | string[] | yes |  |
+| `state_errors` | string[] | yes |  |
 | `subvolumes` | string[] | yes |  |
 | `vms` | string[] | yes |  |
 
@@ -8150,6 +8169,8 @@ Enum: `dhcp`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `backing_volume` | `BlockVolumeId` \| null | no | Stable identity of a NASty-managed block subvolume. |
+| `backing_volume_unresolved` | boolean | no | Prevents startup from trusting a stale legacy loop path. |
 | `backstore_name` | string | yes | LIO backstore name (auto-generated) |
 | `backstore_path` | string | yes | Path to block device or file used as backstore |
 | `backstore_type` | string | yes | "block" or "fileio" |
@@ -8222,6 +8243,8 @@ Enum: `dhcp`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `backing_volume` | `BlockVolumeId` \| null | no | Stable identity of a NASty-managed block subvolume. |
+| `backing_volume_unresolved` | boolean | no | Prevents startup from trusting a stale legacy loop path. |
 | `device_path` | string | yes | Block device path backing this namespace (e.g. `/dev/loop0`). |
 | `enabled` | boolean | yes | Whether the namespace is enabled in configfs. |
 | `nsid` | integer | yes | Namespace ID (1-based, auto-assigned). |
@@ -8748,6 +8771,7 @@ Only includes options that differ from the filesystem default. |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
 | `comments` | string | no | Free-text description or notes for this subvolume. |
 | `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
 | `created` | boolean | no | True only when this response came from the create operation that
@@ -8786,6 +8810,7 @@ backing image's allocated size. |
 | `nvmeof_subsystems` | string[] | yes |  |
 | `path` | string | yes |  |
 | `smb_shares` | string[] | yes |  |
+| `state_errors` | string[] | yes |  |
 | `vms` | string[] | yes |  |
 
 ### `SubvolumeType`
