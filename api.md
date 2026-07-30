@@ -2579,6 +2579,33 @@ Remove a LUN from an iSCSI target.
 | `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
 
 
+### `share.iscsi.repair_lun`
+
+Reconnect an unresolved legacy LUN to a managed block subvolume without changing target, portal, or ACL settings.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device_path` | string | yes | Currently attached managed block-subvolume device. |
+| `lun_id` | integer | yes | LUN whose managed backing identity should be repaired. |
+| `target_id` | string | yes | ID of the target containing the unresolved LUN. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `acls` | `Acl`[] | yes | Initiator ACL entries controlling which hosts may connect. |
+| `alias` | string | no | Optional human-readable alias for the target. |
+| `enabled` | boolean | yes | Whether the target is currently active in LIO. |
+| `id` | string | yes | Unique target identifier (UUID). |
+| `iqn` | string | yes | iSCSI Qualified Name (e.g. `iqn.2137-04.storage.nasty:tank-vol`). |
+| `luns` | `Lun`[] | yes | Logical units exposed by this target. |
+| `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
+
+
 ### `share.iscsi.add_acl`
 
 Allow an iSCSI initiator IQN to connect.
@@ -2841,6 +2868,33 @@ Remove a namespace from a subsystem.
 |-------|------|:--------:|-------------|
 | `nsid` | integer | yes | Namespace ID to remove. |
 | `subsystem_id` | string | yes | ID of the subsystem from which to remove the namespace. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `allow_any_host` | boolean | yes | Whether any host NQN is permitted to connect without explicit ACL entries. |
+| `allowed_hosts` | string[] | yes | NQNs of hosts explicitly allowed to connect (used when `allow_any_host` is false). |
+| `enabled` | boolean | yes | Whether this subsystem is active in nvmet configfs. |
+| `id` | string | yes | Unique subsystem identifier (UUID). |
+| `namespaces` | `Namespace`[] | yes | Block device namespaces exposed by this subsystem. |
+| `nqn` | string | yes | NVMe Qualified Name (e.g. `nqn.2137-04.storage.nasty:tank-vol`). |
+| `ports` | `Port`[] | yes | Transport ports this subsystem is reachable on. |
+
+
+### `share.nvmeof.repair_namespace`
+
+Reconnect an unresolved legacy namespace to a managed block subvolume without changing subsystem, port, or host settings.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device_path` | string | yes | Currently attached managed block-subvolume device. |
+| `nsid` | integer | yes | Namespace whose managed backing identity should be repaired. |
+| `subsystem_id` | string | yes | ID of the subsystem containing the unresolved namespace. |
 
 **Returns:**
 
