@@ -616,7 +616,7 @@ routing/presentation only; server-side Role User authorization remains
 the security boundary for every portal operation. |
 | `hostname` | string | no | System hostname. |
 | `oidc` | `OidcSettings` | no | OpenID Connect single-sign-on configuration. Disabled by default. |
-| `telemetry_enabled` | boolean | no | Whether anonymous telemetry is enabled (drive count, storage capacity). |
+| `telemetry_enabled` | boolean | no | Whether pseudonymous usage telemetry is enabled. |
 | `temp_unit` | `TempUnit` | no | Unit for displayed temperatures (CPU, disks, alert thresholds).
 Storage and alert evaluation always use Celsius internally — this
 only affects rendering in the WebUI. |
@@ -668,7 +668,7 @@ Update system settings. Only provided fields are changed.
 | `clock_24h` | boolean | no | Whether to use 24-hour clock display (optional). |
 | `files_domain` | string | no | Optional files portal FQDN (set to empty string to clear). |
 | `hostname` | string | no | New hostname to set (optional). |
-| `telemetry_enabled` | boolean | no | Enable/disable anonymous telemetry. |
+| `telemetry_enabled` | boolean | no | Enable/disable pseudonymous usage telemetry. |
 | `temp_unit` | `TempUnit` \| null | no | Display unit for temperatures (optional). |
 | `timezone` | string | no | New IANA timezone to apply (optional). |
 | `tls_acme_email` | string | no | Email address for ACME notifications. |
@@ -691,7 +691,7 @@ routing/presentation only; server-side Role User authorization remains
 the security boundary for every portal operation. |
 | `hostname` | string | no | System hostname. |
 | `oidc` | `OidcSettings` | no | OpenID Connect single-sign-on configuration. Disabled by default. |
-| `telemetry_enabled` | boolean | no | Whether anonymous telemetry is enabled (drive count, storage capacity). |
+| `telemetry_enabled` | boolean | no | Whether pseudonymous usage telemetry is enabled. |
 | `temp_unit` | `TempUnit` | no | Unit for displayed temperatures (CPU, disks, alert thresholds).
 Storage and alert evaluation always use Celsius internally — this
 only affects rendering in the WebUI. |
@@ -4497,7 +4497,7 @@ Generate a fresh random password (and optionally a new username), rewrite the ht
 
 ### `telemetry.send`
 
-Trigger an immediate anonymous telemetry report (drive/VM/app counts, version, arch) to the NASty telemetry endpoint. No-op when telemetry is disabled in settings.
+Trigger an immediate usage telemetry report (random installation ID; mounted drive, capacity, and used-space totals; VM/app counts; version/build; architecture). No-op when telemetry is disabled in settings.
 
 **Role:** `admin`
 
