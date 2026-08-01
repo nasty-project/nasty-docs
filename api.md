@@ -1039,7 +1039,7 @@ is rejected upfront when any are missing. |
 `none` is recommended for SSDs. |
 | `journal_flush_delay` | integer | no | Journal flush delay in microseconds (default: 1000). Higher values batch
 more journal writes, improving throughput under sync-heavy workloads. |
-| `label` | string | no | Filesystem-wide label (used as default when no per-device labels set). |
+| `label` | string | no | Default per-device tiering label when targets are set and no device label is provided. |
 | `metadata_checksum` | string | no | Metadata checksum algorithm. |
 | `metadata_target` | string | no | Target label for metadata placement. |
 | `name` | string | yes | Name for the new filesystem; becomes the mount point directory under `/fs/`. |
@@ -4497,7 +4497,7 @@ Generate a fresh random password (and optionally a new username), rewrite the ht
 
 ### `telemetry.send`
 
-Trigger an immediate usage telemetry report (random installation ID; mounted drive, capacity, and used-space totals; VM/app counts; version/build; architecture). No-op when telemetry is disabled in settings.
+Trigger an immediate usage telemetry report (random installation ID; mounted drive, capacity, and used-space totals; VM/app and configured sharing export counts; version/build; architecture). No-op when telemetry is disabled in settings.
 
 **Role:** `admin`
 
