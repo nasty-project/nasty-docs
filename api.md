@@ -1683,8 +1683,9 @@ Get a single subvolume.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -1744,8 +1745,9 @@ for an existing destination; existing data is never reformatted. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -1807,8 +1809,9 @@ Attach the loop device for a block subvolume (mounts `vol.img` via losetup).
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -1856,8 +1859,9 @@ Detach the loop device for a block subvolume.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -1906,8 +1910,9 @@ Resize a block subvolume's backing image.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -1956,8 +1961,9 @@ Set arbitrary key-value metadata on a subvolume (stored as POSIX xattrs in the `
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -2006,8 +2012,9 @@ Remove specific metadata keys from a subvolume.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -2139,8 +2146,9 @@ Clone a snapshot into a new independent subvolume.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -4926,8 +4934,9 @@ Create a writable COW clone of a subvolume by taking a non-read-only bcachefs sn
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -4960,7 +4969,7 @@ backing image's allocated size. |
 
 ### `subvolume.update`
 
-Update mutable subvolume attributes (compression, comments, foreground/background/promote/metadata targets, data replicas) via bcachefs `set-file-option` and xattrs.
+Update mutable subvolume attributes (compression, comments, foreground/background/promote/metadata targets, data replicas, erasure coding) via bcachefs `set-file-option` and xattrs.
 
 **Role:** `operator`
 
@@ -4970,8 +4979,9 @@ Update mutable subvolume attributes (compression, comments, foreground/backgroun
 |-------|------|:--------:|-------------|
 | `background_target` | string | no | Device or label for background moves/recompression. Use `-` to remove. |
 | `comments` | string | no | New description for the subvolume. Empty string clears the comment. |
-| `compression` | string | no | New compression algorithm (e.g. `lz4`, `zstd`, `none`). `none` clears compression. |
-| `data_replicas` | integer | no | Number of data replicas. Use `0` to reset to filesystem default. |
+| `compression` | string | no | New compression algorithm (e.g. `lz4`, `zstd`, `none`). Use `inherit` to remove the override. |
+| `data_replicas` | integer | no | Number of data replicas. Use `0` to inherit from the parent directory. |
+| `erasure_code` | `SubvolumeErasureCode` \| null | no | Erasure-coding policy for this subvolume. |
 | `filesystem` | string | yes | Name of the filesystem containing the subvolume. |
 | `foreground_target` | string | no | Device or label for foreground writes. Use `-` to remove. |
 | `metadata_target` | string | no | Device or label for metadata/btree writes. Use `-` to remove. |
@@ -4982,8 +4992,9 @@ Update mutable subvolume attributes (compression, comments, foreground/backgroun
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -8820,8 +8831,9 @@ see template note above. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `bcachefs_options` | object | no | Effective bcachefs options set on this subvolume (from bcachefs_effective.* xattrs).
-Only includes options that differ from the filesystem default. |
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
 | `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
 | `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
 | `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
@@ -8866,6 +8878,10 @@ backing image's allocated size. |
 | `smb_shares` | string[] | yes |  |
 | `state_errors` | string[] | yes |  |
 | `vms` | string[] | yes |  |
+
+### `SubvolumeErasureCode`
+
+*(see schema)*
 
 ### `SubvolumeType`
 
