@@ -966,6 +966,29 @@ Manually override a disk's type (ssd/hdd/nvme), or 'auto' to clear. For VMs wher
 | `path` | string | yes | Current device path (e.g. `/dev/sda`) — resolved to a stable key. |
 
 
+### `device.set_io_scheduler`
+
+Set and persist the I/O scheduler on the physical whole disk owning a queue, or stop managing it without changing the active scheduler. Device aliases and partitions are resolved through sysfs.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `path` | string | yes | A whole-disk path, partition path, or `/dev/disk/*` alias. |
+| `scheduler` | string | no | Scheduler to manage, or `None` to stop managing without changing it. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id_kind` | string | yes | Durability of `stable_id`: `hardware`, `slot`, or `volatile`. |
+| `io_scheduler` | `IoSchedulerState` | yes |  |
+| `path` | string | yes | Canonical whole-device path that owns the queue. |
+| `stable_id` | string | yes | Stable identity used for persistence. |
+
+
 ## Filesystems
 
 ### `fs.list`
@@ -1035,8 +1058,6 @@ is rejected upfront when any are missing. |
 | `encryption` | boolean | no | Whether to enable encryption at format time. |
 | `erasure_code` | boolean | no | Whether to enable erasure coding. |
 | `foreground_target` | string | no | Tiering targets set at format time. |
-| `io_scheduler` | string | no | I/O scheduler for member block devices (`none`, `mq-deadline`, `kyber`).
-`none` is recommended for SSDs. |
 | `journal_flush_delay` | integer | no | Journal flush delay in microseconds (default: 1000). Higher values batch
 more journal writes, improving throughput under sync-heavy workloads. |
 | `label` | string | no | Default per-device tiering label when targets are set and no device label is provided. |
@@ -1145,7 +1166,6 @@ Update runtime-mutable bcachefs filesystem options (written to sysfs).
 | `error_action` | string | no | Action on unrecoverable read errors (`continue`, `ro`, `panic`). |
 | `foreground_target` | string | no | Target label for foreground (new) writes. |
 | `fsck` | boolean | no | Run fsck at mount time. |
-| `io_scheduler` | string | no | I/O scheduler for member block devices (`none`, `mq-deadline`, `kyber`). |
 | `journal_flush_delay` | integer | no | Journal flush delay in microseconds. Higher values batch more journal writes. |
 | `journal_flush_disabled` | boolean | no | Disable journal flushing (unsafe, for benchmarking). |
 | `metadata_checksum` | string | no | Metadata checksum algorithm (`none`, `crc32c`, `crc64`, `xxhash`). |
@@ -7687,6 +7707,8 @@ offline/former member apart from a foreign disk (#472). |
 `slot` (by-path, reboot-stable but tied to the VM disk slot), or
 `volatile` (/dev name only — won't survive re-lettering). |
 | `in_use` | boolean | yes | Whether the device is currently in use (mounted, in a filesystem, or has partitions in use). |
+| `io_scheduler` | `IoSchedulerState` \| null | no | Kernel I/O scheduler state for physical whole disks. Partitions and
+synthetic free-space rows do not own a queue and return `None`. |
 | `model` | string | no | Drive model from lsblk (e.g. "Samsung SSD 970 EVO Plus 1TB"). None
 for partitions and for virtual disks that don't expose a model. |
 | `mount_point` | string | no | Current mount point, if mounted. |
@@ -8062,8 +8084,6 @@ while mounted. |
 | `error_action` | string | no | Action on unrecoverable read errors (`continue`, `ro`, `panic`). |
 | `foreground_target` | string | no | Target label for foreground (new) writes. |
 | `fsck` | boolean | no | Whether fsck runs at mount time. |
-| `io_scheduler` | string | no | I/O scheduler for member block devices (e.g. `none`, `mq-deadline`, `kyber`).
-`none` is recommended for SSDs; `mq-deadline` is the kernel default. |
 | `journal_flush_delay` | integer | no | Journal flush delay in microseconds. Higher values batch more journal writes,
 improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | `journal_flush_disabled` | boolean | no | Whether journal flushing is disabled. |
@@ -8199,6 +8219,14 @@ follow-up). Only meaningful alongside `sriov_num_vfs`; indices
 are validated against it. Empty = no per-VF configuration
 (default; also what every pre-existing config deserializes to). |
 
+### `IoSchedulerState`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `active` | string | yes | Scheduler currently selected by the kernel. |
+| `available` | string[] | yes | Schedulers advertised by this device's queue. |
+| `configured` | string | no | Scheduler NASty will restore at startup, if managed. |
+
 ### `IommuGroup`
 
 | Field | Type | Required | Description |
@@ -8267,6 +8295,8 @@ Enum: `dhcp`
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `available_bytes` | integer | yes | RAM available for allocation without swapping. |
+| `bcachefs_btree_cache_bytes` | integer | no | Kernel-reported bcachefs btree-node main buffers across mounted
+filesystems. This is approximate and not total bcachefs RAM. |
 | `swap_total_bytes` | integer | yes | Total swap space in bytes. |
 | `swap_used_bytes` | integer | yes | Swap space currently in use. |
 | `total_bytes` | integer | yes | Total installed RAM in bytes. |
