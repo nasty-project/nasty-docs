@@ -370,7 +370,7 @@ Evaluate alert rules against current system state and return any active alerts.
 
 **Returns:**
 
-``ActiveAlert`[]`
+``AlertOccurrence`[]`
 
 
 ### `system.reboot`
@@ -841,6 +841,27 @@ Disable a protocol service.
 
 
 ## Alert Rules
+
+### `alert.acknowledge`
+
+Acknowledge one active alert occurrence until its condition resolves.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `instance_id` | string | yes | Opaque active alert occurrence identifier. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `acknowledged_at` | string | yes |  |
+| `acknowledged_by` | string | yes |  |
+| `instance_id` | string | yes |  |
+
 
 ### `alert.rules.list`
 
@@ -7402,19 +7423,6 @@ this only seals NASty's state file.) |
 | `password` | string | no | Optional CHAP password. |
 | `userid` | string | no | Optional CHAP username. |
 
-### `ActiveAlert`
-
-| Field | Type | Required | Description |
-|-------|------|:--------:|-------------|
-| `current_value` | number | yes | Current metric value at the time the alert was evaluated. |
-| `message` | string | yes | Human-readable description of the alert condition. |
-| `metric` | `AlertMetric` | yes | Metric that triggered the alert. |
-| `rule_id` | string | yes | ID of the rule that triggered this alert. |
-| `rule_name` | string | yes | Name of the rule that triggered this alert. |
-| `severity` | `AlertSeverity` | yes | Severity level of the alert. |
-| `source` | string | yes | Identifier of the specific resource that triggered the alert (e.g. filesystem name, device path). |
-| `threshold` | number | yes | Threshold value configured in the rule. |
-
 ### `ActiveOperation`
 
 | Field | Type | Required | Description |
@@ -7432,6 +7440,23 @@ Enum: `above`, `below`, `equals`
 ### `AlertMetric`
 
 Enum: `fs_usage_percent`
+
+### `AlertOccurrence`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `acknowledged` | boolean | yes |  |
+| `acknowledged_at` | string | no |  |
+| `acknowledged_by` | string | no |  |
+| `current_value` | number | yes | Current metric value at the time the alert was evaluated. |
+| `instance_id` | string | yes |  |
+| `message` | string | yes | Human-readable description of the alert condition. |
+| `metric` | `AlertMetric` | yes | Metric that triggered the alert. |
+| `rule_id` | string | yes | ID of the rule that triggered this alert. |
+| `rule_name` | string | yes | Name of the rule that triggered this alert. |
+| `severity` | `AlertSeverity` | yes | Severity level of the alert. |
+| `source` | string | yes | Identifier of the specific resource that triggered the alert (e.g. filesystem name, device path). |
+| `threshold` | number | yes | Threshold value configured in the rule. |
 
 ### `AlertRule`
 
