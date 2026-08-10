@@ -1023,6 +1023,17 @@ List all filesystems. Filesystem-scoped tokens see only their assigned filesyste
 ``Filesystem`[]`
 
 
+### `fs.unavailable.list`
+
+List UUID-bound host registrations whose filesystem is not currently visible. Filesystem-scoped tokens see only their assigned filesystem.
+
+**Role:** `any`
+
+**Returns:**
+
+``UnavailableFilesystem`[]`
+
+
 ### `fs.get`
 
 Get a single filesystem by name.
@@ -1112,7 +1123,7 @@ no recorded failure. |
 
 ### `fs.destroy`
 
-Unmount and unregister a filesystem. Does not wipe the devices.
+Unmount a filesystem, wipe filesystem signatures/superblocks from its member devices, and unregister it.
 
 **Role:** `admin`
 
@@ -1122,6 +1133,21 @@ Unmount and unregister a filesystem. Does not wipe the devices.
 |-------|------|:--------:|-------------|
 | `confirm_name` | string | yes | Must match `name` exactly — guards against accidental destruction. |
 | `name` | string | yes | Name of the filesystem to destroy. |
+
+
+### `fs.forget`
+
+Forget an unavailable filesystem's host-side registration and operation history without modifying disks or encryption key files.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `confirm_name` | string | yes | Must exactly match `name`. |
+| `expected_uuid` | string | yes | Must exactly match the UUID currently persisted for `name`. |
+| `name` | string | yes |  |
 
 
 ### `fs.mount`
@@ -4878,6 +4904,7 @@ Return all downstream entities (subvolumes, apps, VMs, backup jobs, NFS/SMB/iSCS
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `apps` | string[] | yes |  |
+| `apps_storage` | boolean | yes |  |
 | `backup_jobs` | string[] | yes |  |
 | `filesystem` | string | yes |  |
 | `iscsi_targets` | string[] | yes |  |
@@ -8148,6 +8175,7 @@ improving throughput under sync-heavy workloads (e.g. NFS commits). |
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `apps` | string[] | yes |  |
+| `apps_storage` | boolean | yes |  |
 | `backup_jobs` | string[] | yes |  |
 | `filesystem` | string | yes |  |
 | `iscsi_targets` | string[] | yes |  |
@@ -8973,6 +9001,16 @@ fails. |
 ### `Transport`
 
 Enum: `tcp`, `udp`
+
+### `UnavailableFilesystem`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `auto_mount` | boolean | yes |  |
+| `devices` | string[] | no |  |
+| `last_mount_error` | `MountFailure` \| null | no |  |
+| `name` | string | yes |  |
+| `uuid` | string | yes | UUID persisted in the host-side registration. |
 
 ### `UsbDevice`
 
