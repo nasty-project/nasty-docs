@@ -8249,6 +8249,10 @@ can tell at a glance which deployment a stuck cert belongs to. |
 | `issuer` | string | no |  |
 | `message` | string | no | `active` ⇒ on-disk cert path. `failed` / `issuing` ⇒ last log
 line, verbatim. `pending` ⇒ None. |
+| `renewal_error` | string | no | Most recent failed issuance or renewal event from Caddy while a
+certificate is still present on disk. |
+| `renewal_observed` | boolean | yes | Whether Caddy's recent ACME journal supplied a conclusive event
+for this host, or a freshly valid certificate proved recovery. |
 | `state` | string | yes |  |
 
 ### `InterfaceConfig`
