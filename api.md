@@ -1,14 +1,14 @@
 # NASty JSON-RPC API
 
-NASty exposes a **JSON-RPC 2.0** API over **WebSocket** at `/ws`.
+NASty exposes a **JSON-RPC 2.0** API over **WebSocket** at `/ws` and a REST gateway for the same registered methods under `/api/v1`.
 
 ## Transport
 
-Connect to `ws://<host>/ws` with a valid session cookie or `Authorization: Bearer <token>` header.
+Connect to `wss://<host>/ws` when the appliance is served over HTTPS. Use `ws://<host>/ws` only for deliberate direct plain-HTTP access. Authenticate with the `nasty_session` cookie or an `Authorization: Bearer <token>` header.
 
 **Request:**
 ```json
-{"jsonrpc": "2.0", "id": 1, "method": "pool.list", "params": {}}
+{"jsonrpc": "2.0", "id": 1, "method": "fs.list", "params": {}}
 ```
 
 **Response:**
@@ -23,15 +23,20 @@ Connect to `ws://<host>/ws` with a valid session cookie or `Authorization: Beare
 
 ## Authentication
 
-Send `POST /api/login` with `{"username": "...", "password": "..."}` to receive a session token. Pass it as a cookie (`session=<token>`) or `Authorization: Bearer <token>` header on the WebSocket upgrade.
+Send `POST /api/login` with `{"username": "...", "password": "..."}` to receive a session token. Pass it as a cookie (`nasty_session=<token>`) or `Authorization: Bearer <token>` header.
+
+## REST and OpenAPI
+
+Registered methods are also available through the REST gateway; for example, `fs.list` maps to `GET /api/v1/fs/list`. GET parameters use the query string and other methods accept a JSON body. Interactive Swagger UI is available at `/api/docs`, backed by the OpenAPI 3.1 document at `/api/openapi.json`. Streaming endpoints and real-time events remain WebSocket-only.
 
 ## Roles
 
 | Role | Description |
 |------|-------------|
 | `admin` | Full access to all methods |
-| `operator` | Create/delete subvolumes and snapshots; read pools. Cannot manage users, destroy pools, or change system settings. |
-| `readonly` | Read-only access to all list/get methods |
+| `operator` | Day-to-day storage, sharing, app, and VM operations without Admin-only system or root-equivalent access |
+| `readonly` | Non-privileged read-only API access |
+| `user` | Self-service account methods and authorized file-portal access |
 
 API tokens can additionally be scoped to a single **filesystem** (restricts visibility) and for operator tokens to a single **owner** (restricts to subvolumes owned by that token).
 
@@ -39,7 +44,7 @@ API tokens can additionally be scoped to a single **filesystem** (restricts visi
 
 After any successful mutation the server broadcasts an event on the same WebSocket:
 ```json
-{"event": "pool"}
+{"event": "filesystem"}
 ```
 Clients should re-fetch the relevant resource when they receive an event. Event types: `filesystem`, `subvolume`, `snapshot`, `share.nfs`, `share.smb`, `share.iscsi`, `share.nvmeof`, `protocol`, `settings`, `alert`.
 
@@ -2250,7 +2255,7 @@ backing image's allocated size. |
 
 Roll a subvolume back to a snapshot: quiesce its apps/VMs/shares, take a safety snapshot of the current state, swap the subvolume to the snapshot, and resume. Destructive; filesystem subvolumes only.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -6826,7 +6831,7 @@ Progress/outcome of the current or most recent appdata relocation, or null if no
 
 Move the appdata subvolume to another filesystem and flip the stable /appdata symlink: stops apps that bind /appdata, copies with ownership preserved, switches, restarts them. The old copy is left in place for the operator to delete after verifying.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -6839,7 +6844,7 @@ Move the appdata subvolume to another filesystem and flip the stable /appdata sy
 
 Enable the apps runtime on this box (optionally pinning the storage filesystem) and start Docker.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -6852,7 +6857,7 @@ Enable the apps runtime on this box (optionally pinning the storage filesystem) 
 
 Disable the apps runtime on this box (stop Docker and clear the persisted enabled flag in AppsConfig).
 
-**Role:** `operator`
+**Role:** `admin`
 
 
 ### `apps.install`
@@ -7172,7 +7177,7 @@ Return aggregated `docker compose logs` output for a named compose app, defaulti
 
 Deploy a new compose-based app by writing its docker-compose.yml to disk, pre-creating bind-mount dirs with the right ownership, running `docker compose up -d`, and auto-creating an ingress for the first exposed TCP port.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -7216,7 +7221,7 @@ outside the standard sandbox). Surfaced as a badge in the WebUI. |
 
 Overwrite a compose app's docker-compose.yml, pre-create any newly added bind-mount sources, and run `docker compose up -d --no-build --pull missing --remove-orphans` to apply the new config.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -7260,7 +7265,7 @@ outside the standard sandbox). Surfaced as a badge in the WebUI. |
 
 Tear down a compose app via `docker compose down -v --remove-orphans`, delete its project directory, and remove its Caddy ingress.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -7273,7 +7278,7 @@ Tear down a compose app via `docker compose down -v --remove-orphans`, delete it
 
 Set NASty-managed startup ordering for a compose stack (#437): when managed, the engine forces `restart: "no"` and brings the stack up at boot in the configured order with a settle delay; when unmanaged, the stack reverts to its compose file's own restart policy.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
