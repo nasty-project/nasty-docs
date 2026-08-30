@@ -80,6 +80,7 @@ Clients should re-fetch the relevant resource when they receive an event. Event 
 - [System ACME](#system-acme)
 - [System TLS](#system-tls)
 - [System NUT (UPS)](#system-nut-ups)
+- [System Watchdog](#system-watchdog)
 - [System RDMA](#system-rdma)
 - [System Passthrough](#system-passthrough)
 - [System Guest Tools](#system-guest-tools)
@@ -801,7 +802,7 @@ List all protocols and their current status.
 
 ### `service.protocol.enable`
 
-Enable a protocol service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `ssh`, `avahi`, `smart`.
+Enable a protocol or system service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `nut`, `ssh`, `avahi`, `smart`, `watchdog`, `rest-server`. Arming `watchdog` requires an unscoped Admin.
 
 **Role:** `operator`
 
@@ -809,7 +810,7 @@ Enable a protocol service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `ss
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `name` | string | yes | Protocol name (nfs, smb, iscsi, nvmeof, ssh, avahi, smart). |
+| `name` | string | yes | Service name (nfs, smb, iscsi, nvmeof, nut, ssh, avahi, smart, watchdog, rest-server). |
 
 **Returns:**
 
@@ -832,7 +833,7 @@ Disable a protocol service.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `name` | string | yes | Protocol name (nfs, smb, iscsi, nvmeof, ssh, avahi, smart). |
+| `name` | string | yes | Service name (nfs, smb, iscsi, nvmeof, nut, ssh, avahi, smart, watchdog, rest-server). |
 
 **Returns:**
 
@@ -3801,6 +3802,52 @@ Return the live UPS status (charge, runtime, voltage, load, model) as reported b
 | `ups_load` | number | no | UPS load percentage. |
 | `ups_model` | string | no | UPS model/product name. |
 | `ups_serial` | string | no | UPS serial number. |
+
+
+## System Watchdog
+
+### `system.watchdog.config.get`
+
+Return the persisted load, memory, and IPv4 ping watchdog configuration.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `max_load_1` | integer | no | Maximum allowed one-minute load average. Zero disables load checks. |
+| `max_load_15` | integer | no | Maximum allowed fifteen-minute load average. Zero disables load checks. |
+| `max_load_5` | integer | no | Maximum allowed five-minute load average. Zero disables load checks. |
+| `min_memory_mib` | integer | no | Minimum reclaimable memory in MiB. Zero disables the memory check. |
+| `ping_hosts` | string[] | no | Numeric IPv4 addresses that must all respond to ICMP ping. |
+
+
+### `system.watchdog.config.update`
+
+Validate and apply a partial watchdog configuration update. Active checks can reboot the appliance when their failure persists.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `max_load_1` | integer | no |  |
+| `max_load_15` | integer | no |  |
+| `max_load_5` | integer | no |  |
+| `min_memory_mib` | integer | no |  |
+| `ping_hosts` | string[] | no |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `max_load_1` | integer | no | Maximum allowed one-minute load average. Zero disables load checks. |
+| `max_load_15` | integer | no | Maximum allowed fifteen-minute load average. Zero disables load checks. |
+| `max_load_5` | integer | no | Maximum allowed five-minute load average. Zero disables load checks. |
+| `min_memory_mib` | integer | no | Minimum reclaimable memory in MiB. Zero disables the memory check. |
+| `ping_hosts` | string[] | no | Numeric IPv4 addresses that must all respond to ICMP ping. |
 
 
 ## System RDMA
