@@ -6617,6 +6617,9 @@ Return the high-level App record (name, image, status, kind, containers, ports, 
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
@@ -6952,6 +6955,9 @@ hostname is taken. |
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
@@ -7017,6 +7023,9 @@ hostname is taken. |
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
@@ -7107,6 +7116,9 @@ Pull the latest image(s) for a named app and recreate the container(s) — for s
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
@@ -7244,6 +7256,9 @@ separately and prepended automatically. |
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
@@ -7288,6 +7303,9 @@ separately and prepended automatically. |
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
@@ -7571,6 +7589,9 @@ Enum: `warning`, `critical`
 |-------|------|:--------:|-------------|
 | `containers` | `AppContainer`[] | no | Individual containers (for compose apps with multiple services). |
 | `created` | string | yes | ISO 8601 timestamp of when the container was created. |
+| `expected_containers` | string[] | no | Container instances expected from persisted configuration. Simple apps
+contain their app name; compose service names repeat for configured
+replicas, while services behind inactive profiles are excluded. |
 | `image` | string | yes | Container image (primary image for compose apps). |
 | `kind` | string | yes | App kind: "simple" or "compose". |
 | `name` | string | yes | App name (container name for simple, project name for compose). |
