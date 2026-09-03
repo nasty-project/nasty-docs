@@ -272,6 +272,7 @@ time). When this differs from `bcachefs_pinned_ref`, the WebUI's
 top-bar chip offers a one-click switch of the operator's pin to
 this ref. `None` if the embedded flake can't be parsed. |
 | `bcachefs_version` | string | yes | Output of `bcachefs version` (first line). |
+| `current_time` | string | yes | Current system time in UTC, formatted as RFC 3339. |
 | `engine_built` | string | no | Build timestamp of the engine binary. |
 | `engine_commit` | string | no | Git commit the engine binary was compiled from. |
 | `hostname` | string | yes | System hostname. |
@@ -617,6 +618,7 @@ Return current system settings.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `clock_24h` | boolean | no | Whether to display clocks in 24-hour format. |
+| `dashboard_motd` | string | no | Optional message shown with the dashboard clock. |
 | `files_domain` | string | no | Optional hostname presenting the Role User files portal. This is
 routing/presentation only; server-side Role User authorization remains
 the security boundary for every portal operation. |
@@ -672,6 +674,7 @@ Update system settings. Only provided fields are changed.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `clock_24h` | boolean | no | Whether to use 24-hour clock display (optional). |
+| `dashboard_motd` | string | no | Message shown with the dashboard clock (optional, empty clears it). |
 | `files_domain` | string | no | Optional files portal FQDN (set to empty string to clear). |
 | `hostname` | string | no | New hostname to set (optional). |
 | `telemetry_enabled` | boolean | no | Enable/disable pseudonymous usage telemetry. |
@@ -692,6 +695,7 @@ Update system settings. Only provided fields are changed.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `clock_24h` | boolean | no | Whether to display clocks in 24-hour format. |
+| `dashboard_motd` | string | no | Optional message shown with the dashboard clock. |
 | `files_domain` | string | no | Optional hostname presenting the Role User files portal. This is
 routing/presentation only; server-side Role User authorization remains
 the security boundary for every portal operation. |
@@ -5653,6 +5657,17 @@ Return all configured backup profiles.
 ``BackupProfile`[]`
 
 
+### `backup.schedule.list`
+
+Return enabled backup schedules with their next nominal UTC cron occurrence.
+
+**Role:** `any`
+
+**Returns:**
+
+``BackupScheduleEntry`[]`
+
+
 ### `backup.profile.get`
 
 Return a single backup profile by id.
@@ -7802,6 +7817,17 @@ at runtime that rustic_backend reads via its `cacert` option. |
 | `message` | string | yes |  |
 | `success` | boolean | yes |  |
 | `timestamp` | string | yes |  |
+
+### `BackupScheduleEntry`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `last_run` | `BackupRunResult` \| null | no |  |
+| `next_run_at` | string | no | Next nominal cron occurrence in UTC, formatted as RFC 3339. |
+| `profile_id` | string | yes |  |
+| `profile_name` | string | yes |  |
+| `schedule` | string | yes |  |
+| `schedule_error` | string | no | Present when an enabled profile contains an invalid cron expression. |
 
 ### `BackupSnapshot`
 
