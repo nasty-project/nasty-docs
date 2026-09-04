@@ -468,6 +468,42 @@ look like a no-op. |
 | `update_available` | boolean | no | Whether a newer version is available. None if the check has not been run yet. |
 
 
+### `system.update.check_cached`
+
+Check for available updates, reusing an appliance-wide result for up to five minutes.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `channel` | `ReleaseChannel` | yes | Active release channel. |
+| `current_version` | string | yes | Currently installed version (short commit SHA or `dev`). |
+| `error` | string | no | Human-readable explanation when the latest-version lookup failed
+(GitHub unreachable, rate-limited, refused token, …). Populated
+by `check()`; `version()` leaves it `None`. Surfaced in the UI
+as an amber banner so operators don't see a silent dash when
+GitHub is misbehaving — previously the failure mode was
+indistinguishable from "no check has ever run". |
+| `inputs` | `VersionInputInfo`[] | no | Snapshot of each tracked flake input (`nasty`, `nixpkgs`,
+`bcachefs-tools`) — name, URL, locked rev. Embedded here so the
+Version page can render all three pinned components in the
+summary card without making a second RPC. None when the
+engine can't read the local flake (parse error, fresh install
+pre-bootstrap, etc); the UI falls back to the nasty rev alone
+in that case. |
+| `last_attempt` | string | no | Result of the last upgrade-unit invocation: `"success"`, `"failed"`,
+or `None` if no upgrade has ever been kicked off (or it's still
+running). When `"failed"`, the engine forces `update_available =
+Some(true)` regardless of the tag comparison so the WebUI keeps
+offering Upgrade — a failed rebuild often leaves `flake.lock`
+pointing at the target tag, which would otherwise make the check
+look like a no-op. |
+| `latest_version` | string | no | Latest upstream version, if the check has been performed. |
+| `update_available` | boolean | no | Whether a newer version is available. None if the check has not been run yet. |
+
+
 ### `system.update.apply`
 
 Fetch and apply the latest NixOS generation. Runs `nixos-rebuild switch` in the background.
