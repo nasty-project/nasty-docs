@@ -3595,9 +3595,9 @@ firmware, missing driver). |
 
 ### `system.logs`
 
-Return the tail of a systemd unit's journal.
+Return the tail of a systemd unit's journal. Requires an unscoped Admin session because journal entries can contain sensitive system data.
 
-**Role:** `any`
+**Role:** `admin`
 
 **Params:**
 
@@ -4790,9 +4790,9 @@ verbatim in a tooltip or banner. Empty when
 
 ### `firmware.update`
 
-Apply the available firmware update for the named device via fwupd. Refuses the call if Secure Boot constraints block the capsule-apply path.
+Apply the available firmware update for the named device via fwupd. Requires an unscoped Admin session and refuses the call if Secure Boot constraints block the capsule-apply path.
 
-**Role:** `operator`
+**Role:** `admin`
 
 **Params:**
 
@@ -6695,7 +6695,7 @@ outside the standard sandbox). Surfaced as a badge in the WebUI. |
 
 Return the deployed configuration of a named simple app (image, ports, env, volumes, resource limits, allow_unsafe), with env entries tagged where they match the image's own defaults so the WebUI Edit form can grey them out.
 
-**Role:** `any`
+**Role:** `operator`
 
 **Params:**
 
@@ -6775,7 +6775,7 @@ Return Docker logs for an arbitrary container by ID or name (no `nasty-` prefix 
 
 Return the raw Docker `inspect` JSON for a named simple app's container as an untyped object.
 
-**Role:** `any`
+**Role:** `operator`
 
 **Params:**
 
@@ -7250,9 +7250,9 @@ the user wants if the path was pre-populated. |
 
 ### `apps.compose.get`
 
-Return the raw docker-compose.yml file contents for a named compose-based app.
+Return the raw docker-compose.yml and operator-provided .env file contents for a named compose-based app.
 
-**Role:** `any`
+**Role:** `admin`
 
 **Params:**
 
@@ -7262,7 +7262,11 @@ Return the raw docker-compose.yml file contents for a named compose-based app.
 
 **Returns:**
 
-`object`
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `compose_file` | string | yes | docker-compose.yml text. |
+| `env_file` | string | no | Operator-provided `.env` text, or null when none was stored.
+NASty's managed `COMPOSE_PROJECT_NAME` header is stripped. |
 
 
 ### `apps.compose.logs`
