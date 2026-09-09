@@ -842,7 +842,7 @@ List all protocols and their current status.
 
 ### `service.protocol.enable`
 
-Enable a protocol or system service. Available names: `nfs`, `smb`, `iscsi`, `nvmeof`, `nut`, `ssh`, `avahi`, `smart`, `watchdog`, `rest-server`. Arming `watchdog` requires an unscoped Admin.
+Enable a protocol or system service. Share protocols (`nfs`, `smb`, `iscsi`, `nvmeof`) require an unscoped Operator; system services (`nut`, `ssh`, `avahi`, `smart`, `watchdog`, `rest-server`) require an unscoped Admin.
 
 **Role:** `operator`
 
@@ -865,7 +865,7 @@ Enable a protocol or system service. Available names: `nfs`, `smb`, `iscsi`, `nv
 
 ### `service.protocol.disable`
 
-Disable a protocol service.
+Disable a protocol or system service. Share protocols require an unscoped Operator; system services require an unscoped Admin.
 
 **Role:** `operator`
 
@@ -5211,7 +5211,7 @@ List SMB users by parsing `pdbedit -L` output and filtering to UIDs ≥ 3000.
 
 ### `smb.user.create`
 
-Create a Linux system user (no shell, no home, UID auto-assigned from 3000+) and set their Samba password. Requires the SMB protocol to be enabled.
+Create a Linux system user (no shell, no home, UID auto-assigned from 3000+) and set their Samba password. Requires the SMB protocol and an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
@@ -5232,7 +5232,7 @@ Create a Linux system user (no shell, no home, UID auto-assigned from 3000+) and
 
 ### `smb.user.delete`
 
-Remove the user's Samba password entry and delete the Linux system account. Requires the SMB protocol to be enabled.
+Remove the user's Samba password entry and delete the Linux system account. Requires the SMB protocol and an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
@@ -5245,7 +5245,7 @@ Remove the user's Samba password entry and delete the Linux system account. Requ
 
 ### `smb.user.set_password`
 
-Change an existing SMB user's Samba password. Requires the SMB protocol to be enabled.
+Change an existing SMB user's Samba password. Requires the SMB protocol and an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
@@ -5272,7 +5272,7 @@ List SMB-managed groups (GIDs in the 3000-3999 range) read from `/etc/group`, in
 
 ### `smb.group.create`
 
-Create a Linux system group (GID auto-assigned from the SMB range, 3000+) used for SMB access control.
+Create a Linux system group (GID auto-assigned from the SMB range, 3000+) used for SMB access control. Requires an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
@@ -5293,7 +5293,7 @@ Create a Linux system group (GID auto-assigned from the SMB range, 3000+) used f
 
 ### `smb.group.delete`
 
-Delete the SMB-managed Linux group via `groupdel`.
+Delete the SMB-managed Linux group via `groupdel`. Requires an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
@@ -5306,7 +5306,7 @@ Delete the SMB-managed Linux group via `groupdel`.
 
 ### `smb.group.add_member`
 
-Add an existing user to an existing SMB group via `usermod -aG`.
+Add an existing user to an existing SMB group via `usermod -aG`. Requires an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
@@ -5320,7 +5320,7 @@ Add an existing user to an existing SMB group via `usermod -aG`.
 
 ### `smb.group.remove_member`
 
-Remove a user from an SMB group via `gpasswd -d`.
+Remove a user from an SMB group via `gpasswd -d`. Requires an unscoped Operator or Admin session.
 
 **Role:** `operator`
 
