@@ -1342,12 +1342,26 @@ Return current scrub status.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `bcachefs_module_version` | string | no | Loaded bcachefs module version captured when the attempt started. |
+| `bcachefs_tools_version` | string | no | Output of `bcachefs version` captured when the attempt started. |
+| `cancel_requested` | boolean | no | A cancellation signal was accepted for this active run. Persisted so
+an additional engine restart still records the eventual stop correctly. |
+| `kernel_version` | string | no | Running kernel release captured when the attempt started. |
+| `last_corrected_bytes` | integer | no | Approximate aggregate bytes repaired during the most recently
+finished attempt, parsed from bcachefs's rounded per-device values. |
 | `last_duration_secs` | integer | no | Duration of the most recent completed scrub, in seconds. |
+| `last_error_kind` | `ScrubErrorKind` \| null | no | Whether reported read errors were repaired. May accompany a
+`Failed` outcome when the scrub also reported interruption. |
+| `last_exit_code` | integer | no | Exact child exit code for the most recently finished attempt.
+`None` when no code was available (spawn failure, signal,
+engine interruption). |
 | `last_outcome` | `ScrubOutcome` \| null | no | Outcome of the most recent completed scrub. |
 | `last_output` | string | no | Captured stdout+stderr from the most recent completed scrub.
 Truncated to the last `SCRUB_OUTPUT_KEEP_BYTES` so a chatty
 long-running scrub doesn't bloat the state file. |
 | `last_run_at` | integer | no | Unix seconds when the most recent completed scrub finished. |
+| `last_uncorrected_bytes` | integer | no | Approximate aggregate bytes still unreadable after the most
+recently finished attempt's recovery work. |
 | `progress_percent` | number | no | 0-100 progress of the in-flight scrub, parsed from the
 most recent `XX%` token in bcachefs's streaming output. Only
 populated while `running`; deliberately NOT persisted so an
@@ -1356,6 +1370,7 @@ a stale percent from a child that's no longer being read. |
 | `raw` | string | yes | Human-readable summary string — kept for backward compatibility
 with the existing Diagnostics tab renderer (which reads `raw`).
 New WebUI surfaces should prefer the typed fields above. |
+| `run_id` | string | no | Stable ID for the active attempt, retained after it completes. |
 | `running` | boolean | yes | Whether a scrub is currently in progress. |
 | `started_at` | integer | no | Unix seconds when the current run started. `Some` while
 `running`; cleared on completion. |
@@ -1371,7 +1386,9 @@ Cancel a running scrub by terminating its bcachefs process (#553).
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `name` | string | yes | Filesystem name. |
+| `name` | string | yes |  |
+| `run_id` | string | no | Run observed by the caller. Legacy callers may omit it, but current
+clients send it so a delayed confirmation cannot cancel a replacement. |
 
 
 ### `fs.fsck.start`
@@ -8709,6 +8726,7 @@ the legacy plaintext `client_secret` when set. |
 | `last_outcome` | string | no | "ok" | "errors" | "failed" | "cancelled"; scrub rows only. |
 | `last_run_at` | integer | no | Unix seconds when the most recent scrub completed; scrub rows only. |
 | `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
+| `run_id` | string | no | Active scrub run ID used to bind cancellation to the displayed run. |
 | `state` | string | yes | "running" (scrub/evacuate in flight) | "active" (background job
 working) | "idle" (enabled, not currently working) | "paused"
 (disabled). |
@@ -8867,6 +8885,10 @@ transition is also visible on the wizard's polled UI. |
 ### `Role`
 
 Enum: `admin`
+
+### `ScrubErrorKind`
+
+Enum: `corrected`, `uncorrected`
 
 ### `ScrubOutcome`
 
