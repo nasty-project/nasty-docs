@@ -301,7 +301,7 @@ Return health status of all systemd services.
 
 ### `system.status`
 
-Aggregated system status for the sidebar band (#528): one level (healthy / activity / critical), a headline, the in-progress array operations (device evacuation, scrub, reconcile), and active alert counts. Cached ~10s.
+Aggregated system status for the sidebar band (#528): one level (healthy / activity / critical), a headline, the in-progress array operations (device evacuation, scrub, reconcile), and active alert counts. Cached ~10s. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -318,7 +318,7 @@ Aggregated system status for the sidebar band (#528): one level (healthy / activ
 
 ### `system.operations.list`
 
-List controllable data operations across mounted filesystems for the Operations panel (#553): per-pool scrubs (start when idle, cancel when running), device evacuations (cancel while draining, with an idle acknowledgement when none run), and the pausable background jobs reconcile and copygc, each with the action the UI can take.
+List controllable data operations across mounted filesystems for the Operations panel (#553): per-pool scrubs (start when idle, cancel when running), device evacuations (cancel while draining, with an idle acknowledgement when none run), and the pausable background jobs reconcile and copygc, each with the action the UI can take. Filesystem-scoped sessions see only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -371,7 +371,7 @@ Return S.M.A.R.T. health data for all drives. Requires SMART protocol to be enab
 
 ### `system.alerts`
 
-Evaluate alert rules against current system state and return any active alerts.
+Evaluate alert rules against current system state and return any active alerts. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -890,7 +890,7 @@ Disable a protocol or system service. Share protocols require an unscoped Operat
 
 ### `alert.acknowledge`
 
-Acknowledge one active alert occurrence until its condition resolves.
+Acknowledge one active alert occurrence until its condition resolves. Requires an unscoped session.
 
 **Role:** `operator`
 
@@ -911,7 +911,7 @@ Acknowledge one active alert occurrence until its condition resolves.
 
 ### `alert.rules.list`
 
-List all alert rules.
+List all alert rules. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -922,7 +922,7 @@ List all alert rules.
 
 ### `alert.rules.create`
 
-Create a new alert rule.
+Create a new alert rule. Requires an unscoped session.
 
 **Role:** `admin`
 
@@ -953,7 +953,7 @@ Create a new alert rule.
 
 ### `alert.rules.update`
 
-Update an existing alert rule. Only provided fields are changed.
+Update an existing alert rule. Only provided fields are changed. Requires an unscoped session.
 
 **Role:** `admin`
 
@@ -982,7 +982,7 @@ Update an existing alert rule. Only provided fields are changed.
 
 ### `alert.rules.delete`
 
-Delete an alert rule by ID.
+Delete an alert rule by ID. Requires an unscoped session.
 
 **Role:** `admin`
 
@@ -997,7 +997,7 @@ Delete an alert rule by ID.
 
 ### `device.list`
 
-List all block devices and partitions visible to the system.
+List all block devices and partitions visible to the system. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -1060,7 +1060,7 @@ Set and persist the I/O scheduler on the physical whole disk owning a queue, or 
 
 ### `fs.list`
 
-List all filesystems. Filesystem-scoped tokens see only their assigned filesystem.
+List all filesystems. Filesystem-scoped sessions see only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1071,7 +1071,7 @@ List all filesystems. Filesystem-scoped tokens see only their assigned filesyste
 
 ### `fs.unavailable.list`
 
-List UUID-bound host registrations whose filesystem is not currently visible. Filesystem-scoped tokens see only their assigned filesystem.
+List UUID-bound host registrations whose filesystem is not currently visible. Filesystem-scoped sessions see only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1082,7 +1082,7 @@ List UUID-bound host registrations whose filesystem is not currently visible. Fi
 
 ### `fs.get`
 
-Get a single filesystem by name.
+Get a single filesystem by name. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1292,7 +1292,7 @@ no recorded failure. |
 
 ### `fs.usage`
 
-Return detailed bcachefs `fs usage` breakdown.
+Return detailed bcachefs `fs usage` breakdown. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1328,7 +1328,7 @@ Start a scrub on a mounted filesystem.
 
 ### `fs.scrub.status`
 
-Return current scrub status.
+Return current scrub status. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1406,7 +1406,7 @@ Start an offline bcachefs fsck on an unmounted filesystem (dry run by default; s
 
 ### `fs.fsck.status`
 
-Return current fsck status.
+Return current fsck status. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1437,7 +1437,7 @@ vs a read-only dry run (`-n`). |
 
 ### `fs.reconcile.status`
 
-Return bcachefs background work (reconcile) status.
+Return bcachefs background work (reconcile) status. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1457,7 +1457,7 @@ Return bcachefs background work (reconcile) status.
 
 ### `bcachefs.usage`
 
-Return raw `bcachefs fs usage` output for a filesystem.
+Return raw `bcachefs fs usage` output for a filesystem. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -1480,7 +1480,7 @@ Return raw `bcachefs fs usage` output for a filesystem.
 
 ### `fs.tpm.status`
 
-Report TPM2 host capability and per-filesystem bind state. `tpm_available` reflects whether `/dev/tpmrm0` is present; `bound` reflects whether a sealed-key blob exists for this filesystem.
+Report TPM2 host capability and per-filesystem bind state. `tpm_available` reflects whether `/dev/tpmrm0` is present; `bound` reflects whether a sealed-key blob exists for this filesystem. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -2335,7 +2335,7 @@ Roll a subvolume back to a snapshot: quiesce its apps/VMs/shares, take a safety 
 
 ### `share.nfs.list`
 
-List all NFS shares.
+List NFS shares visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2346,7 +2346,7 @@ List all NFS shares.
 
 ### `share.nfs.get`
 
-Get an NFS share by ID.
+Get an NFS share by ID when it is visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2436,7 +2436,7 @@ Delete an NFS share.
 
 ### `share.smb.list`
 
-List all SMB shares.
+List SMB shares visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2447,7 +2447,7 @@ List all SMB shares.
 
 ### `share.smb.get`
 
-Get an SMB share by ID.
+Get an SMB share by ID when it is visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2585,7 +2585,7 @@ Delete an SMB share.
 
 ### `share.iscsi.list`
 
-List all iSCSI targets.
+List iSCSI targets whose complete backing storage is visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2596,7 +2596,7 @@ List all iSCSI targets.
 
 ### `share.iscsi.get`
 
-Get an iSCSI target by ID.
+Get an iSCSI target by ID when all of its backing storage is visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2889,7 +2889,7 @@ empty — a target with zero portals is unreachable. |
 
 ### `share.nvmeof.list`
 
-List all NVMe-oF subsystems.
+List NVMe-oF subsystems whose complete backing storage is visible to the current credential scope.
 
 **Role:** `any`
 
@@ -2900,7 +2900,7 @@ List all NVMe-oF subsystems.
 
 ### `share.nvmeof.get`
 
-Get an NVMe-oF subsystem by ID.
+Get an NVMe-oF subsystem by ID when all of its backing storage is visible to the current credential scope.
 
 **Role:** `any`
 
@@ -3465,9 +3465,9 @@ Admin recovery: clear every WebAuthn credential registered to the target user (u
 
 ### `audit.list`
 
-Return the most recent audit-log entries (default 200, capped by `limit`), parsed line-by-line in reverse chronological order. Entry shape depends on the action being audited.
+Return the most recent global audit-log entries (default 200, capped by `limit`), parsed line-by-line in reverse chronological order. Requires an unscoped Admin because records include other users' identities, client addresses, denied operations, and mutation details.
 
-**Role:** `any`
+**Role:** `admin`
 
 **Params:**
 
@@ -4696,9 +4696,9 @@ Trigger an immediate usage telemetry report (random installation ID; mounted dri
 
 ### `notifications.config.get`
 
-Return the persisted notification-channels configuration (SMTP / Telegram / Webhook / ntfy / Signal).
+Return the persisted notification-channels configuration (SMTP / Telegram / Webhook / ntfy / Signal), with dedicated secret fields redacted. Requires an unscoped Admin because endpoint URLs and arbitrary headers can contain credentials.
 
-**Role:** `any`
+**Role:** `admin`
 
 **Returns:**
 
@@ -4709,7 +4709,7 @@ Return the persisted notification-channels configuration (SMTP / Telegram / Webh
 
 ### `notifications.config.update`
 
-Replace the on-disk notifications config with the supplied one. File is chmod 0600 because it carries SMTP passwords and bot tokens.
+Replace the on-disk notifications config with the supplied one. Requires an unscoped Admin. File is chmod 0600 because it carries SMTP passwords and bot tokens.
 
 **Role:** `admin`
 
@@ -4722,7 +4722,7 @@ Replace the on-disk notifications config with the supplied one. File is chmod 06
 
 ### `notifications.test`
 
-Send a one-shot test message ("NASty Test") through the supplied channel configuration without persisting it.
+Send a one-shot test message ("NASty Test") through the supplied channel configuration without persisting it. Requires an unscoped Admin.
 
 **Role:** `admin`
 
@@ -4737,7 +4737,7 @@ Send a one-shot test message ("NASty Test") through the supplied channel configu
 
 ### `notifications.test_saved`
 
-Send a test message through an already-saved channel, identified by id. Sealed secrets are resolved server-side, so the secret never has to round-trip through the client.
+Send a test message through an already-saved channel, identified by id. Requires an unscoped Admin. Sealed secrets are resolved server-side, so the secret never has to round-trip through the client.
 
 **Role:** `admin`
 
@@ -4998,7 +4998,7 @@ Ignored by non-remove actions. |
 
 ### `fs.dependents`
 
-Return all downstream entities (subvolumes, apps, VMs, backup jobs, NFS/SMB/iSCSI/NVMe-oF shares) that reference a given filesystem, used to preview impact before destructive operations like lock.
+Return all downstream entities (subvolumes, apps, VMs, backup jobs, NFS/SMB/iSCSI/NVMe-oF shares) that reference a given filesystem, used to preview impact before destructive operations like lock. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -5028,7 +5028,7 @@ Return all downstream entities (subvolumes, apps, VMs, backup jobs, NFS/SMB/iSCS
 
 ### `fs.locked_dependents`
 
-Return the reverse-index of currently locked encrypted filesystems mapped to their app/VM dependents (for the WebUI's "locked on FS" badges).
+Return the reverse-index of currently locked encrypted filesystems mapped to their app/VM dependents (for the WebUI's "locked on FS" badges). Filesystem-scoped sessions see only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -5041,7 +5041,7 @@ Return the reverse-index of currently locked encrypted filesystems mapped to the
 
 ### `bcachefs.top`
 
-Capture ~2 seconds of `bcachefs fs top` output for the named filesystem via a PTY, strip ANSI/header noise, and return the last complete frame as plain text.
+Capture ~2 seconds of `bcachefs fs top` output for the named filesystem via a PTY, strip ANSI/header noise, and return the last complete frame as plain text. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -5058,7 +5058,7 @@ Capture ~2 seconds of `bcachefs fs top` output for the named filesystem via a PT
 
 ### `bcachefs.timestats`
 
-Run `bcachefs fs timestats --json --once` against the named filesystem's mount point and return the parsed JSON (latency/duration histograms for bcachefs operations).
+Run `bcachefs fs timestats --json --once` against the named filesystem's mount point and return the parsed JSON (latency/duration histograms for bcachefs operations). Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
 
 **Role:** `any`
 
@@ -5077,7 +5077,7 @@ Run `bcachefs fs timestats --json --once` against the named filesystem's mount p
 
 ### `subvolume.children`
 
-List nested child subvolume names found beneath the named parent subvolume on the given filesystem.
+List nested child subvolume names found beneath the named parent subvolume on the given filesystem, filtered by the session's filesystem and owner scopes.
 
 **Role:** `any`
 
@@ -5204,7 +5204,7 @@ backing image's allocated size. |
 
 ### `subvolume.list_dependents`
 
-Batched read returning the set of downstream entities (apps, VMs, backup jobs, shares of every protocol) attributed to each subvolume on the system, optionally filtered to the session's scoped filesystem.
+Batched read returning the set of downstream entities (apps, VMs, backup jobs, shares of every protocol) attributed to each subvolume visible under the session's filesystem and owner scopes.
 
 **Role:** `any`
 
@@ -5686,7 +5686,7 @@ List joined computers (Admin — enumerates the hosted directory).
 
 ### `backup.status`
 
-Report whether any backup is currently running and which profile id it belongs to.
+Report whether any backup is currently running and which profile id it belongs to. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -5701,7 +5701,7 @@ Report whether any backup is currently running and which profile id it belongs t
 
 ### `backup.profile.list`
 
-Return all configured backup profiles.
+Return all configured backup profiles. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -5712,7 +5712,7 @@ Return all configured backup profiles.
 
 ### `backup.schedule.list`
 
-Return enabled backup schedules with their next nominal UTC cron occurrence.
+Return enabled backup schedules with their next nominal UTC cron occurrence. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -5723,7 +5723,7 @@ Return enabled backup schedules with their next nominal UTC cron occurrence.
 
 ### `backup.profile.get`
 
-Return a single backup profile by id.
+Return a single backup profile by id. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -5997,7 +5997,7 @@ JSON object for `RunBackup`. |
 
 ### `backup.snapshots`
 
-List all snapshots stored in the profile's repository (id, time, hostname, paths, tags).
+List all snapshots stored in the profile's repository (id, time, hostname, paths, tags). Requires an unscoped session.
 
 **Role:** `any`
 
@@ -6134,7 +6134,7 @@ JSON object for `RunBackup`. |
 
 ### `backup.jobs.list`
 
-List active and recently-finished backup jobs (init / run / check), newest first. Optional `profile_id` filter narrows the list to one profile. Terminal jobs are GC'd one hour after they finish, so this returns a bounded window rather than full history.
+List active and recently-finished backup jobs (init / run / check), newest first. Optional `profile_id` filter narrows the list to one profile. Terminal jobs are GC'd one hour after they finish, so this returns a bounded window rather than full history. Requires an unscoped session.
 
 **Role:** `any`
 
@@ -6151,7 +6151,7 @@ List active and recently-finished backup jobs (init / run / check), newest first
 
 ### `backup.jobs.get`
 
-Return one backup job by id. 404-equivalent error when the id is unknown (job never existed or was GC'd after its retention window).
+Return one backup job by id. 404-equivalent error when the id is unknown (job never existed or was GC'd after its retention window). Requires an unscoped session.
 
 **Role:** `any`
 
@@ -7240,7 +7240,7 @@ Return the `docker exec -it <container> <shell>` command string for opening an i
 
 ### `apps.fix_volume_perms`
 
-Chown a host bind-mount source path to the given uid/gid (optionally recursively), enforcing the same forbidden-bind validation as compose deploys.
+Chown an existing, non-symlink host bind-mount source path to the given uid/gid (optionally recursively), enforcing the same forbidden-bind validation as compose deploys. Requires an unscoped Admin session.
 
 **Role:** `admin`
 
@@ -7249,9 +7249,8 @@ Chown a host bind-mount source path to the given uid/gid (optionally recursively
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `gid` | integer | yes |  |
-| `host_path` | string | yes | Host bind-mount source to chown. Validated against the same
-forbidden-bind rules as compose deploys (no `..`, no `/`, no
-engine state). |
+| `host_path` | string | yes | Existing, non-symlink host bind-mount source to chown. Validated against
+the same forbidden-bind rules as compose deploys. |
 | `recursive` | boolean | no | When true, recurse into the directory tree. Off by default
 because recursive chown on a path like `/fs/tank/media` rewrites
 ownership on every existing file under it — almost never what
