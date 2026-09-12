@@ -38,6 +38,8 @@ Registered methods are also available through the REST gateway; for example, `fs
 | `readonly` | Non-privileged read-only API access |
 | `user` | Self-service account methods and authorized file-portal access |
 
+The method role label `any` means any authenticated management role (`admin`, `operator`, or `readonly`). It does not include the standard `user` role, whose API access is separately allowlisted.
+
 API tokens can additionally be scoped to a single **filesystem** (restricts visibility) and for operator tokens to a single **owner** (restricts to subvolumes owned by that token).
 
 ## Real-time Events
@@ -2860,7 +2862,7 @@ value exactly (no normalization). |
 
 Replace an iSCSI target's portal set in one call. The engine orders the transition (adds before removes where possible, conflicting adds after), so swapping the wildcard portal for a specific address on the same port works directly — no temporary portal needed.
 
-**Role:** `admin`
+**Role:** `operator`
 
 **Params:**
 
@@ -4525,9 +4527,9 @@ Persist the selected release channel.
 
 ### `system.network.pending`
 
-Return the list of network-update transactions still awaiting confirm-or-rollback. (Admin-only by current role-gate even though it's a read.)
+Return the list of network-update transactions still awaiting confirm-or-rollback.
 
-**Role:** `admin`
+**Role:** `any`
 
 **Returns:**
 
@@ -4549,9 +4551,9 @@ Confirm a pending network-change rollback transaction so the new config sticks.
 
 ### `system.network.nm_preview`
 
-Compute the diff between desired NetworkManager profiles and NM's current state without applying.
+Compute the diff between desired NetworkManager profiles and NM's current state without applying or persisting changes.
 
-**Role:** `admin`
+**Role:** `any`
 
 **Returns:**
 
@@ -4778,9 +4780,9 @@ List every device known to `fwupdmgr` with its name, vendor, device ID, and curr
 
 ### `firmware.check`
 
-Refresh LVFS metadata via `fwupdmgr refresh` then return the device list with `update_available`/`update_version`/`update_description` populated for devices with pending updates.
+Refresh host-wide LVFS metadata via `fwupdmgr refresh` then return pending firmware updates. Requires an unscoped Admin session.
 
-**Role:** `any`
+**Role:** `admin`
 
 **Returns:**
 
