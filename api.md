@@ -1393,6 +1393,55 @@ Cancel a running scrub by terminating its bcachefs process (#553).
 clients send it so a delayed confirmation cannot cancel a replacement. |
 
 
+### `fs.scrub.schedule.get`
+
+Return the optional five-field POSIX scrub schedule and next nominal UTC cron occurrence. Filesystem-scoped sessions may read only their assigned filesystem; owner-scoped sessions are denied.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes | Filesystem name. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes |  |
+| `next_run_at` | string | no | Next nominal cron occurrence after evaluation time in RFC3339 UTC, or
+null for manual-only/error state. A retained due occurrence may run
+earlier once another pool's scrub finishes. |
+| `schedule` | string | no |  |
+| `schedule_error` | string | no |  |
+
+
+### `fs.scrub.schedule.update`
+
+Set a filesystem's required, nullable five-field POSIX scrub schedule in UTC, or disable periodic scrubs with null/whitespace. Missed occurrences are not caught up.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes |  |
+| `schedule` | string | yes | Five-field POSIX cron in UTC. Null or whitespace disables scheduling. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `name` | string | yes |  |
+| `next_run_at` | string | no | Next nominal cron occurrence after evaluation time in RFC3339 UTC, or
+null for manual-only/error state. A retained due occurrence may run
+earlier once another pool's scrub finishes. |
+| `schedule` | string | no |  |
+| `schedule_error` | string | no |  |
+
+
 ### `fs.fsck.start`
 
 Start an offline bcachefs fsck on an unmounted filesystem (dry run by default; set repair=true to auto-repair).
@@ -8726,8 +8775,11 @@ the legacy plaintext `client_secret` when set. |
 | `last_duration_secs` | integer | no | Duration of the most recent scrub in seconds; scrub rows only. |
 | `last_outcome` | string | no | "ok" | "errors" | "failed" | "cancelled"; scrub rows only. |
 | `last_run_at` | integer | no | Unix seconds when the most recent scrub completed; scrub rows only. |
+| `next_run_at` | string | no | Next nominal scrub cron occurrence in RFC3339 UTC; scrub rows only. |
 | `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
 | `run_id` | string | no | Active scrub run ID used to bind cancellation to the displayed run. |
+| `schedule` | string | no | Normalized five-field POSIX cron schedule; scrub rows only. |
+| `schedule_error` | string | no | Schedule persistence/validation error; scrub rows only. |
 | `state` | string | yes | "running" (scrub/evacuate in flight) | "active" (background job
 working) | "idle" (enabled, not currently working) | "paused"
 (disabled). |
