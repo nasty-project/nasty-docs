@@ -6753,6 +6753,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -6784,6 +6786,7 @@ Return the deployed configuration of a named simple app (image, ports, env, volu
 | `network` | string | no | NASty-managed Docker network the app is attached to (from label).
 Round-tripped through Edit/pull so a reinstall keeps the attachment. |
 | `ports` | `AppPort`[] | yes |  |
+| `registry_credential_ids` | string[] | no |  |
 | `static_ip` | string | no | The static IP requested at install (from label), if any. Distinct
 from a live auto-assigned address — re-applied verbatim on reinstall. |
 | `subdomain` | string | no | The app's subdomain-ingress hostname, if any (from the manifest).
@@ -6866,7 +6869,8 @@ Inspect a container image (registry/local) and return its declared ports, VOLUME
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `image` | string | yes | Image reference (`repo:tag`). |
+| `image` | string | yes | Image reference (`repo:tag` or `repo@digest`). |
+| `registry_credential_id` | string | no | Optional named credential pin. Using it requires an unscoped Admin session. |
 
 **Returns:**
 
@@ -6891,6 +6895,82 @@ chowned to that identity by the install pipeline. `None` = root. |
 The WebUI installer prefills these as Volume rows so the user
 doesn't have to know that e.g. ghcr.io/consi/haze needs
 `/var/lib/haze` to be persistent for SQLite to work. |
+
+
+### `apps.registry_credentials.list`
+
+List redacted named Docker registry credentials. Secrets and ciphertext are never returned. Requires an unscoped Admin session.
+
+**Role:** `admin`
+
+**Returns:**
+
+``RegistryCredential`[]`
+
+
+### `apps.registry_credentials.create`
+
+Create a named Docker registry credential encrypted at rest with systemd-creds. The registry host is canonicalized and immutable. Requires an unscoped Admin session.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `label` | string | yes |  |
+| `registry` | string | yes | Registry host and optional port. Schemes and paths are not accepted. |
+| `secret` | string | yes | Password or personal access token. Never returned by the API. |
+| `username` | string | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `has_secret` | boolean | yes |  |
+| `id` | string | yes |  |
+| `label` | string | yes |  |
+| `registry` | string | yes |  |
+| `username` | string | yes |  |
+
+
+### `apps.registry_credentials.update`
+
+Update a registry credential label, username, and optionally its password/token. Omit secret to retain it. Requires an unscoped Admin session.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes |  |
+| `label` | string | yes |  |
+| `secret` | string | no | Omit to retain the current password/token. |
+| `username` | string | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `has_secret` | boolean | yes |  |
+| `id` | string | yes |  |
+| `label` | string | yes |  |
+| `registry` | string | yes |  |
+| `username` | string | yes |  |
+
+
+### `apps.registry_credentials.delete`
+
+Delete an unreferenced registry credential. Refuses while any app pins it. Requires an unscoped Admin session.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `id` | string | yes | Registry credential UUID. |
 
 
 ### `apps.caddy.routes`
@@ -7053,6 +7133,8 @@ container gets its own LAN IP and is *not* reachable at
 `127.0.0.1:<host_port>`, so publishing host ports and reverse-proxy
 ingress are rejected/skipped for it (see install's mutual-exclusion). |
 | `ports` | `AppPort`[] | no | Ports to expose. |
+| `registry_credential_ids` | string[] | no | Optional named credential pin(s). A simple app normally has at most one;
+the vector shape is shared with Compose apps that can span registries. |
 | `static_ip` | string | no | Optional static IPv4 within the chosen network's subnet. |
 | `subdomain` | string | no | Optional FQDN to serve the app at via subdomain mode (e.g.
 `jellyfin.example.com`). When set, the install pipeline emits a
@@ -7091,6 +7173,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -7121,6 +7205,8 @@ container gets its own LAN IP and is *not* reachable at
 `127.0.0.1:<host_port>`, so publishing host ports and reverse-proxy
 ingress are rejected/skipped for it (see install's mutual-exclusion). |
 | `ports` | `AppPort`[] | no | Ports to expose. |
+| `registry_credential_ids` | string[] | no | Optional named credential pin(s). A simple app normally has at most one;
+the vector shape is shared with Compose apps that can span registries. |
 | `static_ip` | string | no | Optional static IPv4 within the chosen network's subnet. |
 | `subdomain` | string | no | Optional FQDN to serve the app at via subdomain mode (e.g.
 `jellyfin.example.com`). When set, the install pipeline emits a
@@ -7159,6 +7245,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -7219,7 +7307,7 @@ Restart a named app (simple container or compose project).
 
 ### `apps.pull`
 
-Pull the latest image(s) for a named app and recreate the container(s) — for simple apps it stops/removes/reinstalls preserving config and subdomain mode; for compose apps it runs `docker compose pull` then `up -d`.
+Pull the latest image(s) for a named app through the Docker API with its registry credential binding, then recreate the container(s) while preserving app configuration.
 
 **Role:** `operator`
 
@@ -7252,6 +7340,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -7334,6 +7424,7 @@ Return the raw docker-compose.yml and operator-provided .env file contents for a
 | `compose_file` | string | yes | docker-compose.yml text. |
 | `env_file` | string | no | Operator-provided `.env` text, or null when none was stored.
 NASty's managed `COMPOSE_PROJECT_NAME` header is stripped. |
+| `registry_credential_ids` | string[] | no |  |
 
 
 ### `apps.compose.logs`
@@ -7371,6 +7462,7 @@ method Immich/Nextcloud and similar expect. Absent or empty means
 no operator env. NASty's `COMPOSE_PROJECT_NAME` is managed
 separately and prepended automatically. |
 | `name` | string | yes | App name matching `[a-z0-9][a-z0-9_-]{0,62}` (used as compose project name). |
+| `registry_credential_ids` | string[] | no |  |
 
 **Returns:**
 
@@ -7395,6 +7487,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -7403,7 +7497,7 @@ outside the standard sandbox). Surfaced as a badge in the WebUI. |
 
 ### `apps.compose.update`
 
-Overwrite a compose app's docker-compose.yml, pre-create any newly added bind-mount sources, and run `docker compose up -d --no-build --pull missing --remove-orphans` to apply the new config.
+Overwrite a compose app's docker-compose.yml, resolve and pull effective images through the Docker API, pre-create newly added bind-mount sources, and apply the config without implicit CLI pulls.
 
 **Role:** `admin`
 
@@ -7418,6 +7512,7 @@ method Immich/Nextcloud and similar expect. Absent or empty means
 no operator env. NASty's `COMPOSE_PROJECT_NAME` is managed
 separately and prepended automatically. |
 | `name` | string | yes | App name matching `[a-z0-9][a-z0-9_-]{0,62}` (used as compose project name). |
+| `registry_credential_ids` | string[] | no |  |
 
 **Returns:**
 
@@ -7442,6 +7537,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -7728,6 +7825,8 @@ upstream emits absolute root-path assets that path-prefix proxying
 can't route (haze-class apps). The WebUI hides the "Open" button
 when this is set and surfaces the text as a tooltip explaining
 why only the direct host-port link is offered. |
+| `registry_credential_ids` | string[] | no | Named registry credentials pinned to this app. IDs are opaque; secret
+material remains encrypted server-side and is never included here. |
 | `status` | string | yes | Current status: "running", "stopped", "restarting", "created", "exited". |
 | `unsafe_mode` | boolean | no | True if the app was deployed with allow_unsafe — i.e. it has elevated
 privileges (caps, host devices, host namespaces, or bind mounts
@@ -8920,6 +9019,16 @@ transition is also visible on the wizard's polled UI. |
 ### `RebuildStatus`
 
 *(see schema)*
+
+### `RegistryCredential`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `has_secret` | boolean | yes |  |
+| `id` | string | yes |  |
+| `label` | string | yes |  |
+| `registry` | string | yes |  |
+| `username` | string | yes |  |
 
 ### `ReleaseChannel`
 
