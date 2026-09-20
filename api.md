@@ -6396,6 +6396,57 @@ plugging in two identical keyboards passes both through. |
 | `vga` | string | no | VGA device type: "virtio" (default), "qxl", "std", "none". |
 
 
+### `vm.disk.create`
+
+Create a managed block disk under `vms/<name>` on the selected filesystem.
+
+**Role:** `operator`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes |  |
+| `name` | string | yes |  |
+| `volsize_bytes` | integer | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bcachefs_inherited_options` | object | no | Effective bcachefs options inherited from the parent directory. |
+| `bcachefs_options` | object | no | Effective bcachefs inode options (from bcachefs_effective.* xattrs). |
+| `bcachefs_overrides` | object | no | Explicit bcachefs options set on this subvolume (from bcachefs.* xattrs). |
+| `block_device` | string | no | Loop device path currently attached to the backing image (block subvolumes only). |
+| `block_filesystem` | `BlockFilesystem` \| null | no | Filesystem initialized inside the block image by the backend. |
+| `block_filesystem_uuid` | string | no | UUID reported after backend filesystem initialization. |
+| `block_volume_id` | `BlockVolumeId` \| null | no | Stable backing identity for sharing and reboot restoration. |
+| `comments` | string | no | Free-text description or notes for this subvolume. |
+| `compression` | string | no | Compression algorithm applied to this subvolume (e.g. `lz4`, `zstd`). |
+| `created` | boolean | no | True only when this response came from the create operation that
+successfully created the underlying bcachefs subvolume. |
+| `direct_io` | boolean | no | Whether O_DIRECT is enabled on the loop device (block subvolumes only). |
+| `filesystem` | string | yes | Name of the filesystem that contains this subvolume. |
+| `name` | string | yes | Subvolume name (unique within the filesystem). |
+| `owner` | string | no | Token name that created this subvolume; None for subvolumes created by human users. |
+| `parent` | string | no | Parent subvolume name if this is a clone (from bcachefs snapshot_parent). |
+| `path` | string | yes | Absolute filesystem path to the subvolume directory. |
+| `properties` | object | no | Arbitrary key-value metadata stored as POSIX xattrs (user.* namespace).
+Used by nasty-csi to track CSI volume metadata without sidecar files. |
+| `quota_bytes` | integer | no | Hard quota limit in bytes for filesystem subvolumes. `None`
+means no limit set (the subvolume can grow to fill the
+filesystem). Always `None` for block subvolumes — their
+ceiling is `volsize_bytes`, not a quota. |
+| `snapshots` | string[] | yes | Names of snapshots belonging to this subvolume. |
+| `subvolume_type` | `SubvolumeType` | yes | Whether this is a filesystem or block-backed subvolume. |
+| `used_bytes` | integer | no | Disk usage in bytes. For filesystem subvolumes, comes from the
+per-project quota (set on every create, so tracking is always
+on); `None` only on legacy subvolumes created before the
+always-track change. For block subvolumes, comes from the
+backing image's allocated size. |
+| `volsize_bytes` | integer | no | Size of the backing sparse image in bytes (block subvolumes only). |
+
+
 ### `vm.update`
 
 Apply partial edits to an existing VM's config (name, CPUs, memory, disks, networks, passthrough, CD-ROMs, boot order, UEFI, autostart, etc.). Hardware changes require the VM to be stopped.
@@ -9278,6 +9329,7 @@ backing image's allocated size. |
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `apps` | string[] | yes |  |
+| `apps_storage` | string[] | yes |  |
 | `backup_jobs` | string[] | yes |  |
 | `filesystem` | string | yes |  |
 | `iscsi_targets` | string[] | yes |  |
