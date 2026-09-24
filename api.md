@@ -1010,7 +1010,7 @@ List all block devices and partitions visible to the system. Requires an unscope
 
 ### `device.wipe`
 
-Erase all filesystem signatures from a device (wipefs). The device must not be in use.
+Prepare a whole disk (requires an inspected snapshot) or clear a partition's signatures. Rejects mounted, held, swap, and registered filesystem devices.
 
 **Role:** `admin`
 
@@ -1018,7 +1018,25 @@ Erase all filesystem signatures from a device (wipefs). The device must not be i
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `path` | string | yes | Block device path (e.g. /dev/sdb). |
+| `expected` | `DiskPreparation` \| null | no | Required for whole disks; obtained from `device.prepare.inspect`. |
+| `path` | string | yes |  |
+
+
+### `device.prepare.inspect`
+
+Inspect whole disks for explicit confirmation before destructive preparation. Rejects in-use devices.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `paths` | string[] | yes |  |
+
+**Returns:**
+
+``DiskPreparation`[]`
 
 
 ### `device.set_type`
@@ -1031,7 +1049,7 @@ Manually override a disk's type (ssd/hdd/nvme), or 'auto' to clear. For VMs wher
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `device_class` | string | yes | `ssd` | `hdd` | `nvme` | `auto`. |
+| `device_class` | string | yes | `ssd` | `hdd` | `auto` (legacy `nvme` overrides remain readable). |
 | `path` | string | yes | Current device path (e.g. `/dev/sda`) — resolved to a stable key. |
 
 
@@ -1114,7 +1132,7 @@ no recorded failure. |
 
 ### `fs.create`
 
-Format and mount a new bcachefs filesystem.
+Format and mount a new bcachefs filesystem. Optional prepare_disks requires matching inspected snapshots for selected whole disks; never prepares partitions or unconfirmed devices.
 
 **Role:** `admin`
 
@@ -1145,6 +1163,8 @@ more journal writes, improving throughput under sync-heavy workloads. |
 | `metadata_target` | string | no | Target label for metadata placement. |
 | `name` | string | yes | Name for the new filesystem; becomes the mount point directory under `/fs/`. |
 | `passphrase` | string | no | Passphrase for encryption (required when encryption is true). |
+| `prepare_disks` | `DiskPreparation`[] | no | Explicitly confirmed whole disks to prepare. Each snapshot must still
+match the live disk and all its children when the operation starts. |
 | `promote_target` | string | no | Target label for data promotion (cache tier). |
 | `replicas` | integer | no | Number of data replicas (default 1). |
 | `store_key` | boolean | no | Whether to store the key for auto-unlock on boot (default true).
@@ -8105,7 +8125,7 @@ at runtime that rustic_backend reads via its `cacert` option. |
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `dev_type` | string | yes | lsblk device type: `disk` or `part`. |
-| `device_class` | string | yes | Device speed class: "nvme", "ssd", or "hdd". |
+| `device_class` | string | yes | Legacy class used by existing clients: "nvme", "ssd", "hdd", or "unknown". |
 | `fs_type` | string | no | Filesystem type detected on the device (e.g. `bcachefs`, `ext4`). |
 | `fs_uuid` | string | no | Filesystem UUID from lsblk — for bcachefs members this is the
 *external* (whole-filesystem) UUID, so a candidate disk can be
@@ -8115,11 +8135,17 @@ offline/former member apart from a foreign disk (#472). |
 `slot` (by-path, reboot-stable but tied to the VM disk slot), or
 `volatile` (/dev name only — won't survive re-lettering). |
 | `in_use` | boolean | yes | Whether the device is currently in use (mounted, in a filesystem, or has partitions in use). |
+| `interface_source` | string | no |  |
 | `io_scheduler` | `IoSchedulerState` \| null | no | Kernel I/O scheduler state for physical whole disks. Partitions and
 synthetic free-space rows do not own a queue and return `None`. |
+| `media` | string | no | Physical media (hdd/ssd), independent of drive interface and path. |
+| `media_source` | string | no |  |
 | `model` | string | no | Drive model from lsblk (e.g. "Samsung SSD 970 EVO Plus 1TB"). None
 for partitions and for virtual disks that don't expose a model. |
 | `mount_point` | string | no | Current mount point, if mounted. |
+| `native_interface` | string | no | Native drive interface from SMART; connection path remains `transport`. |
+| `parent_path` | string | no | Parent whole disk for partition and free-space rows. |
+| `partition_table_type` | string | no | Partition table on whole disks, even if no filesystem signature is present. |
 | `path` | string | yes | Absolute path of the block device (e.g. `/dev/sda`). |
 | `rotational` | boolean | yes | Whether the underlying disk spins (false for NVMe/SSD, true for HDD). |
 | `serial` | string | no | Drive serial from lsblk. None for partitions and virtual disks. |
@@ -8127,7 +8153,8 @@ for partitions and for virtual disks that don't expose a model. |
 | `stable_id` | string | no | Stable identity key this disk's type override is anchored to —
 a unique by-id link, a by-path link, or (last resort) the /dev
 name. None for partitions and synthetic "free" entries. (#552) |
-| `transport` | string | no | Transport bus from lsblk (e.g. "sata", "nvme", "usb"). |
+| `transport` | string | no | Connection path reported by lsblk (e.g. "sas" for a SATA drive
+through a SAS shelf). Not necessarily the native drive interface. |
 | `type_source` | string | no | `detected` when `device_class` came from lsblk/sysfs, `manual`
 when an operator override is in effect (#552). |
 | `vendor` | string | no | Drive vendor from lsblk (e.g. "ATA", "NVMe"). |
@@ -8135,6 +8162,23 @@ when an operator override is in effect (#552). |
 ### `BlockFilesystem`
 
 Enum: `ext3`, `ext4`, `xfs`
+
+### `BlockIdentity`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `dev_type` | string | yes |  |
+| `devno` | string | yes |  |
+| `disk_sequence` | integer | no |  |
+| `logical_sector_bytes` | integer | yes |  |
+| `parent_devno` | string | no |  |
+| `partition_number` | integer | no |  |
+| `partition_table_uuid` | string | no |  |
+| `partition_uuid` | string | no |  |
+| `serial` | string | no |  |
+| `size_bytes` | integer | yes |  |
+| `start_512_sector` | integer | no | Partition start as reported by lsblk, in 512-byte sectors. |
+| `wwn` | string | no |  |
 
 ### `BlockVolumeId`
 
@@ -8354,6 +8398,8 @@ pass-throughs typically leave `interface_speed` unpopulated). |
 | `firmware` | string | yes | Drive firmware version string. |
 | `health_passed` | boolean | yes | Whether the SMART overall-health self-assessment test passed. |
 | `model` | string | yes | Drive model name reported by SMART. |
+| `native_interface` | string | no | Native drive interface from explicit SMART identity, not the host
+connection path (a SATA drive can be reached through a SAS shelf). |
 | `nvme` | `NvmeHealth` \| null | no | NVMe SMART health information log (`Some` only on NVMe drives). |
 | `pcie_link` | `PcieLink` \| null | no | PCIe link state for the controller. Carried per-disk for
 schema simplicity (every drive on the same controller carries
@@ -8388,6 +8434,16 @@ the same block device path but have distinct transport flags. |
 | `read_ios` | integer | yes | Cumulative read I/O operations completed since boot. |
 | `write_bytes` | integer | yes | Cumulative bytes written since boot. |
 | `write_ios` | integer | yes | Cumulative write I/O operations completed since boot. |
+
+### `DiskPreparation`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `children` | array[] | yes |  |
+| `fs_type` | string | no |  |
+| `identity` | `BlockIdentity` | yes |  |
+| `partition_table_type` | string | no |  |
+| `path` | string | yes |  |
 
 ### `DmiBios`
 
