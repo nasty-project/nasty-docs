@@ -2705,7 +2705,7 @@ disabled and only these initiators are allowed. |
 | `alias` | string | no | Optional human-readable alias for the target. |
 | `device_path` | string | no | Block device path (e.g. /dev/loop0). When provided, a LUN is
 automatically created and the target is ready for connections. |
-| `name` | string | yes | Short name used to generate the IQN: iqn.2137-01.com.nasty:<name> |
+| `name` | string | yes | Short name used to generate the IQN: <configured base IQN>:<name> |
 | `portals` | `Portal`[] | no | Defaults to 0.0.0.0:3260 |
 
 **Returns:**
