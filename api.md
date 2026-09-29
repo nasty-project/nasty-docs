@@ -3910,6 +3910,20 @@ preferred over the legacy plaintext `remote_password` when set. |
 | `ups_name` | string | no | UPS identifier used by upsc/upsd (e.g. `ups`). |
 
 
+### `system.nut.apply_status`
+
+Return the outcome of the most recent NUT configuration apply.
+
+**Role:** `any`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `error` | string | no |  |
+| `state` | `NutApplyState` | yes |  |
+
+
 ### `system.nut.status`
 
 Return the live UPS status (charge, runtime, voltage, load, model) as reported by `upsc`.
@@ -4352,6 +4366,7 @@ Return the persisted Tailscale config plus the live daemon/connection state (IP,
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `accept_routes` | boolean | yes |  |
 | `connected` | boolean | yes | Whether Tailscale is connected to the network. |
 | `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
 | `enabled` | boolean | yes | Persisted configuration. |
@@ -4371,12 +4386,40 @@ Start the Tailscale daemon and authenticate with the supplied auth key (falling 
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `accept_routes` | boolean | no | Omitted by older clients: keep the persisted preference. |
 | `auth_key` | string | yes |  |
 
 **Returns:**
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `accept_routes` | boolean | yes |  |
+| `connected` | boolean | yes | Whether Tailscale is connected to the network. |
+| `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
+| `enabled` | boolean | yes | Persisted configuration. |
+| `has_auth_key` | boolean | yes | Whether an auth key is configured. |
+| `hostname` | string | no | Tailscale hostname. |
+| `ip` | string | no | Tailscale IPv4 address (100.x.y.z). |
+| `version` | string | no | Tailscale client version. |
+
+
+### `system.tailscale.set_accept_routes`
+
+Set whether the NAS accepts advertised tailnet routes. Defaults to false to preserve local LAN connectivity.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `accept_routes` | boolean | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `accept_routes` | boolean | yes |  |
 | `connected` | boolean | yes | Whether Tailscale is connected to the network. |
 | `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
 | `enabled` | boolean | yes | Persisted configuration. |
@@ -4396,6 +4439,7 @@ Stop the Tailscale daemon, persist `enabled=false`, and clean up NVMe-oF ports o
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `accept_routes` | boolean | yes |  |
 | `connected` | boolean | yes | Whether Tailscale is connected to the network. |
 | `daemon_running` | boolean | yes | Whether the tailscaled daemon is running. |
 | `enabled` | boolean | yes | Persisted configuration. |
@@ -8886,6 +8930,10 @@ Required when `host_shim` is set. |
 `"bridge"`).  Cheap signal for the UI; the WebUI can render a
 richer diff if it wants by re-fetching settings. |
 | `id` | string | yes |  |
+
+### `NutApplyState`
+
+Enum: `idle`, `applying`, `applied`, `failed`
 
 ### `NutMode`
 
