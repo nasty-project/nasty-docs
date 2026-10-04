@@ -4325,7 +4325,7 @@ Append an SSH public key to `/root/.ssh/authorized_keys`.
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `key` | string | yes | Full public key line (must start with `ssh-` or `ecdsa-`). |
+| `key` | string | yes | One OpenSSH public key line with an optional comment, validated by ssh-keygen. |
 
 
 ### `system.ssh.remove_key`
