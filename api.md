@@ -389,6 +389,13 @@ Reboot the system.
 **Role:** `admin`
 
 
+### `system.maintenance.enter`
+
+Persist storage maintenance mode and reboot. Data pools and consumers, including the engine/WebUI, stay disabled until an explicit SSH/console exit. Requires a root-equivalent administrator session.
+
+**Role:** `admin`
+
+
 ### `system.shutdown`
 
 Shut down the system.
@@ -787,6 +794,118 @@ Return list of valid IANA timezone strings.
 **Returns:**
 
 `string[]`
+
+
+### `system.webui.get`
+
+Return confirmed WebUI ports and a pending 30-second confirm-or-rollback transaction. Unscoped admin only.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `confirmed` | `ListenerPorts` | yes |  |
+| `last_error` | string | no |  |
+| `pending` | `PendingListeners` \| null | no |  |
+
+
+### `system.diagnostics.report`
+
+Preview bounded local performance timings without raw logs or identifiers. Unscoped admin only.
+
+**Role:** `admin`
+
+**Returns:**
+
+`object`
+
+
+### `system.diagnostics.capture`
+
+Enable detailed subprocess timing for 15 minutes, or stop it. Nothing is uploaded. Unscoped admin only.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+
+**Returns:**
+
+`object`
+
+
+### `system.diagnostics.clear`
+
+Clear local performance history. Unscoped admin only.
+
+**Role:** `admin`
+
+**Returns:**
+
+`object`
+
+
+### `system.webui.update`
+
+Apply HTTPS and optional HTTP redirect ports with firewall reconciliation. Confirm within 30 seconds or revert. HTTP null disables the redirect listener.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `http_port` | integer | no | None disables the plaintext redirect listener, not HTTPS. |
+| `https_port` | integer | yes |  |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `confirmed` | `ListenerPorts` | yes |  |
+| `last_error` | string | no |  |
+| `pending` | `PendingListeners` \| null | no |  |
+
+
+### `system.webui.confirm`
+
+Confirm a pending WebUI listener transaction after verifying the new HTTPS URL is reachable.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `txn_id` | string | yes | Pending transaction identifier. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `confirmed` | `ListenerPorts` | yes |  |
+| `last_error` | string | no |  |
+| `pending` | `PendingListeners` \| null | no |  |
+
+
+### `system.webui.rollback`
+
+Restore confirmed WebUI listeners and firewall ports immediately.
+
+**Role:** `admin`
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `confirmed` | `ListenerPorts` | yes |  |
+| `last_error` | string | no |  |
+| `pending` | `PendingListeners` \| null | no |  |
 
 
 ## Network
@@ -6511,6 +6630,17 @@ backing image's allocated size. |
 | `volsize_bytes` | integer | no | Size of the backing sparse image in bytes (block subvolumes only). |
 
 
+### `vm.disk.candidates`
+
+List visible block volumes and their configured VM, CSI, export, and local mount consumers. Empty consumers is not proof of an empty disk.
+
+**Role:** `operator`
+
+**Returns:**
+
+``VmDiskCandidate`[]`
+
+
 ### `vm.update`
 
 Apply partial edits to an existing VM's config (name, CPUs, memory, disks, networks, passthrough, CD-ROMs, boot order, UEFI, autostart, etc.). Hardware changes require the VM to be stopped.
@@ -8261,6 +8391,7 @@ Enum: `lacp`, `active_backup`, `balance_rr`, `balance_xor`
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
+| `dhcp_relay` | `DhcpRelayConfig` \| null | no | Optional DHCPv4 relay for an isolated, statically addressed bridge. |
 | `forward_delay_s` | integer | no | Bridge forward delay in seconds. `None` leaves the kernel default
 (15s with STP on, irrelevant with STP off). Set to 0 to skip the
 15-second blackhole when STP is off but forward-delay still applies. |
@@ -8413,6 +8544,13 @@ the nft comment so free-text never enters the ruleset. |
 | `path` | string | yes | Block device path. |
 | `total_bytes` | integer | yes | Total capacity of this device in bytes. |
 | `used_bytes` | integer | yes | Bytes currently used on this device. |
+
+### `DhcpRelayConfig`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `server` | string | yes |  |
+| `upstream` | string | yes |  |
 
 ### `DimmInfo`
 
@@ -8771,6 +8909,13 @@ Enum: `dhcp`
 | `luns` | `Lun`[] | yes | Logical units exposed by this target. |
 | `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
 
+### `ListenerPorts`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `http_port` | integer | no | None disables the plaintext redirect listener, not HTTPS. |
+| `https_port` | integer | yes |  |
+
 ### `Lun`
 
 | Field | Type | Required | Description |
@@ -9090,6 +9235,14 @@ the PF and siblings while one VF goes to the VM. |
 | `current_width` | integer | yes | Currently active lane count (1, 2, 4, 8, 16, …). |
 | `max_speed` | string | yes | Maximum link speed the device + slot can negotiate. |
 | `max_width` | integer | yes | Maximum lane count the device + slot supports. |
+
+### `PendingListeners`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `deadline` | integer | yes |  |
+| `ports` | `ListenerPorts` | yes |  |
+| `txn_id` | string | yes |  |
 
 ### `Port`
 
@@ -9599,6 +9752,13 @@ from `source` (#592) and heal it if the loop device moved. |
 numbers shuffle across reboots but the backing file does not, so
 this is what we persist and re-resolve `path` from at start time.
 `None` for plain image-file disks, whose `path` is already stable. |
+
+### `VmDiskCandidate`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `consumers` | string[] | yes |  |
+| `subvolume` | `Subvolume` | yes |  |
 
 ### `VmDiskSubvolume`
 
