@@ -850,6 +850,23 @@ Clear local performance history. Unscoped admin only.
 `object`
 
 
+### `system.diagnostics.capture_reboot`
+
+Opt in to OS-disk timing checkpoints for 30 minutes across reboot. Retain up to 3 engine sessions for 24 hours; no uploads. Unscoped admin only.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `enabled` | boolean | yes |  |
+
+**Returns:**
+
+`object`
+
+
 ### `system.webui.update`
 
 Apply HTTPS and optional HTTP redirect ports with firewall reconciliation. Confirm within 30 seconds or revert. HTTP null disables the redirect listener.
