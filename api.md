@@ -1780,7 +1780,7 @@ no recorded failure. |
 
 ### `fs.device.remove`
 
-Remove a device from a filesystem. The device should be fully evacuated first.
+Start removing a device from a filesystem. bcachefs migrates its data off first, which can take hours, so this returns a running job at once; follow it with `fs.device.remove.status`. A refused removal ends in state `refused` with bcachefs's message in `error`. Cancel with `fs.device.evacuate.cancel`.
 
 **Role:** `admin`
 
@@ -1801,18 +1801,32 @@ Ignored by non-remove actions. |
 
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
-| `available_bytes` | integer | yes | Bytes available for writing. |
-| `devices` | `FilesystemDevice`[] | yes | Member devices of the filesystem. |
-| `last_mount_error` | `MountFailure` \| null | no | Details of the most recent failed mount attempt, surfaced while
-the filesystem is not mounted. `None` when it's mounted or has
-no recorded failure. |
-| `mount_point` | string | no | Absolute path where the filesystem is mounted (e.g. `/fs/tank`). |
-| `mounted` | boolean | yes | Whether the filesystem is currently mounted. |
-| `name` | string | yes | Human-readable filesystem name, derived from the mount point directory. |
-| `options` | `FilesystemOptions` | yes | Filesystem-level options read from sysfs or show-super. |
-| `total_bytes` | integer | yes | Total usable capacity in bytes. |
-| `used_bytes` | integer | yes | Bytes currently in use. |
-| `uuid` | string | yes | bcachefs filesystem UUID. |
+| `cancel_requested` | boolean | yes | Cancellation was requested; the job is still winding down. |
+| `error` | string | no | Why the job was refused or failed. |
+| `filesystem` | string | yes | Filesystem the job acts on; used for scoping. |
+| `finished_at` | integer | no | Unix seconds; `None` while running. |
+| `id` | string | yes |  |
+| `kind` | string | yes | What the job does, e.g. "device.remove". |
+| `started_at` | integer | yes | Unix seconds. |
+| `state` | `JobState` | yes |  |
+| `target` | string | yes | What within the filesystem it acts on, e.g. a device path. |
+
+
+### `fs.device.remove.status`
+
+List running and recently finished device removals on a filesystem (the last 20 finished, up to 24 hours; cleared on engine restart). Filesystem-scoped sessions may read only their assigned filesystem.
+
+**Role:** `any`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `filesystem` | string | yes | Filesystem name. |
+
+**Returns:**
+
+``Job`[]`
 
 
 ### `fs.device.evacuate`
@@ -8007,7 +8021,7 @@ this only seals NASty's state file.) |
 |-------|------|:--------:|-------------|
 | `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
 | `fs` | string | yes | Filesystem the operation is running on. |
-| `kind` | string | yes | "evacuate" | "scrub" | "reconcile". |
+| `kind` | string | yes | "evacuate" | "remove" | "scrub" | "reconcile". |
 | `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
 | `target` | string | no | Device path for an evacuation; `None` otherwise. |
 
@@ -8926,6 +8940,24 @@ Enum: `dhcp`
 | `luns` | `Lun`[] | yes | Logical units exposed by this target. |
 | `portals` | `Portal`[] | yes | Network portals (IP:port) the target listens on. |
 
+### `Job`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `cancel_requested` | boolean | yes | Cancellation was requested; the job is still winding down. |
+| `error` | string | no | Why the job was refused or failed. |
+| `filesystem` | string | yes | Filesystem the job acts on; used for scoping. |
+| `finished_at` | integer | no | Unix seconds; `None` while running. |
+| `id` | string | yes |  |
+| `kind` | string | yes | What the job does, e.g. "device.remove". |
+| `started_at` | integer | yes | Unix seconds. |
+| `state` | `JobState` | yes |  |
+| `target` | string | yes | What within the filesystem it acts on, e.g. a device path. |
+
+### `JobState`
+
+Enum: `running`
+
 ### `ListenerPorts`
 
 | Field | Type | Required | Description |
@@ -9187,7 +9219,7 @@ the legacy plaintext `client_secret` when set. |
 (scrub/evacuate) | "pause" | "resume" (reconcile/copygc) | "none". |
 | `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
 | `fs` | string | yes | Filesystem the operation belongs to. |
-| `kind` | string | yes | "scrub" | "evacuate" | "reconcile" | "copygc". |
+| `kind` | string | yes | "scrub" | "evacuate" | "remove" | "reconcile" | "copygc". |
 | `last_duration_secs` | integer | no | Duration of the most recent scrub in seconds; scrub rows only. |
 | `last_outcome` | string | no | "ok" | "errors" | "failed" | "cancelled"; scrub rows only. |
 | `last_run_at` | integer | no | Unix seconds when the most recent scrub completed; scrub rows only. |
