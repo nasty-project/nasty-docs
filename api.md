@@ -1805,6 +1805,8 @@ Ignored by non-remove actions. |
 | `error` | string | no | Why the job was refused or failed. |
 | `filesystem` | string | yes | Filesystem the job acts on; used for scoping. |
 | `finished_at` | integer | no | Unix seconds; `None` while running. |
+| `forced` | boolean | yes | Started with a safety check overridden (force-remove), so a refusal
+means the override was refused too. |
 | `id` | string | yes |  |
 | `kind` | string | yes | What the job does, e.g. "device.remove". |
 | `started_at` | integer | yes | Unix seconds. |
@@ -8948,6 +8950,8 @@ Enum: `dhcp`
 | `error` | string | no | Why the job was refused or failed. |
 | `filesystem` | string | yes | Filesystem the job acts on; used for scoping. |
 | `finished_at` | integer | no | Unix seconds; `None` while running. |
+| `forced` | boolean | yes | Started with a safety check overridden (force-remove), so a refusal
+means the override was refused too. |
 | `id` | string | yes |  |
 | `kind` | string | yes | What the job does, e.g. "device.remove". |
 | `started_at` | integer | yes | Unix seconds. |
