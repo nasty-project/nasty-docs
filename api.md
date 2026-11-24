@@ -669,6 +669,8 @@ routing/presentation only; server-side Role User authorization remains
 the security boundary for every portal operation. |
 | `hostname` | string | no | System hostname. |
 | `oidc` | `OidcSettings` | no | OpenID Connect single-sign-on configuration. Disabled by default. |
+| `smart_poll_minutes` | integer | no | Minutes between SMART polls (1-1440). Each poll checks whether
+HDDs are in standby without waking them. |
 | `telemetry_enabled` | boolean | no | Whether pseudonymous usage telemetry is enabled. |
 | `temp_unit` | `TempUnit` | no | Unit for displayed temperatures (CPU, disks, alert thresholds).
 Storage and alert evaluation always use Celsius internally — this
@@ -722,6 +724,7 @@ Update system settings. Only provided fields are changed.
 | `dashboard_motd` | string | no | Message shown with the dashboard clock (optional, empty clears it). |
 | `files_domain` | string | no | Optional files portal FQDN (set to empty string to clear). |
 | `hostname` | string | no | New hostname to set (optional). |
+| `smart_poll_minutes` | integer | no | Minutes between SMART polls, 1-1440 (optional). |
 | `telemetry_enabled` | boolean | no | Enable/disable pseudonymous usage telemetry. |
 | `temp_unit` | `TempUnit` \| null | no | Display unit for temperatures (optional). |
 | `timezone` | string | no | New IANA timezone to apply (optional). |
@@ -746,6 +749,8 @@ routing/presentation only; server-side Role User authorization remains
 the security boundary for every portal operation. |
 | `hostname` | string | no | System hostname. |
 | `oidc` | `OidcSettings` | no | OpenID Connect single-sign-on configuration. Disabled by default. |
+| `smart_poll_minutes` | integer | no | Minutes between SMART polls (1-1440). Each poll checks whether
+HDDs are in standby without waking them. |
 | `telemetry_enabled` | boolean | no | Whether pseudonymous usage telemetry is enabled. |
 | `temp_unit` | `TempUnit` | no | Unit for displayed temperatures (CPU, disks, alert thresholds).
 Storage and alert evaluation always use Celsius internally — this
@@ -8631,6 +8636,8 @@ the HDD-failure SMART-attribute alert to spinning disks (#503). |
 including SAS drives reached via `-d megaraid,N`). |
 | `serial` | string | yes | Drive serial number. |
 | `smart_status` | string | yes | Human-readable SMART health status (`PASSED` or `FAILED`). |
+| `standby` | boolean | no | The last poll found the drive in standby (spun down) and left it
+asleep; the SMART fields are from before it slept. |
 | `temperature_c` | integer | no | Current drive temperature in degrees Celsius. |
 | `transport` | string | no | smartctl transport flag used to reach this drive, e.g.
 `megaraid,0`, `sat+megaraid,2`, `areca,3`. `None` for drives
