@@ -1194,6 +1194,58 @@ Manually override a disk's type (ssd/hdd/nvme), or 'auto' to clear. For VMs wher
 | `path` | string | yes | Current device path (e.g. `/dev/sda`) — resolved to a stable key. |
 
 
+### `device.external.list`
+
+List drives outside any pool that can be mounted read-only for copying (#1080): exFAT, FAT, NTFS or ext on a disk with nothing else in use. Requires an unscoped session.
+
+**Role:** `any`
+
+**Returns:**
+
+``ExternalDrive`[]`
+
+
+### `device.external.mount`
+
+Mount an external drive read-only under /run/nasty/external; the Files page shows it as @external/<name>.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | Block device to mount, or the drive's `name` to eject. |
+
+**Returns:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | Block device, e.g. `/dev/sdb1`. Empty for a mount whose drive was
+unplugged without being ejected. |
+| `fs_type` | string | yes |  |
+| `label` | string | no |  |
+| `model` | string | no | Model of the whole disk, e.g. "SanDisk Ultra". |
+| `mounted` | boolean | yes |  |
+| `name` | string | yes | Directory under `/run/nasty/external`, shown in the Files page as
+`@external/<name>`. |
+| `size_bytes` | integer | yes |  |
+| `transport` | string | no | Connection reported by lsblk, e.g. "usb". |
+
+
+### `device.external.unmount`
+
+Eject an external drive: unmount it so it can be unplugged. Takes the device or the drive's name.
+
+**Role:** `admin`
+
+**Params:**
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | Block device to mount, or the drive's `name` to eject. |
+
+
 ### `device.set_io_scheduler`
 
 Set and persist the I/O scheduler on the physical whole disk owning a queue, or stop managing it without changing the active scheduler. Device aliases and partitions are resolved through sysfs.
@@ -1814,9 +1866,11 @@ Ignored by non-remove actions. |
 means the override was refused too. |
 | `id` | string | yes |  |
 | `kind` | string | yes | What the job does, e.g. "device.remove". |
+| `progress` | `JobProgress` \| null | no | Byte progress and per-item errors, for jobs that report them (file copies). |
 | `started_at` | integer | yes | Unix seconds. |
 | `state` | `JobState` | yes |  |
 | `target` | string | yes | What within the filesystem it acts on, e.g. a device path. |
+| `user` | string | no | Who started it, for jobs only their starter may see (file copies). |
 
 
 ### `fs.device.remove.status`
@@ -8028,7 +8082,7 @@ this only seals NASty's state file.) |
 |-------|------|:--------:|-------------|
 | `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
 | `fs` | string | yes | Filesystem the operation is running on. |
-| `kind` | string | yes | "evacuate" | "remove" | "scrub" | "reconcile". |
+| `kind` | string | yes | "evacuate" | "remove" | "scrub" | "reconcile" | "copy". |
 | `progress_percent` | number | no | Progress 0–100 when known (scrub); `None` otherwise. |
 | `target` | string | no | Device path for an evacuation; `None` otherwise. |
 
@@ -8350,6 +8404,7 @@ offline/former member apart from a foreign disk (#472). |
 | `interface_source` | string | no |  |
 | `io_scheduler` | `IoSchedulerState` \| null | no | Kernel I/O scheduler state for physical whole disks. Partitions and
 synthetic free-space rows do not own a queue and return `None`. |
+| `label` | string | no | Filesystem label from lsblk, e.g. a USB stick's volume name. |
 | `media` | string | no | Physical media (hdd/ssd), independent of drive interface and path. |
 | `media_source` | string | no |  |
 | `model` | string | no | Drive model from lsblk (e.g. "Samsung SSD 970 EVO Plus 1TB"). None
@@ -8697,6 +8752,21 @@ the same block device path but have distinct transport flags. |
 
 *(see schema)*
 
+### `ExternalDrive`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `device` | string | yes | Block device, e.g. `/dev/sdb1`. Empty for a mount whose drive was
+unplugged without being ejected. |
+| `fs_type` | string | yes |  |
+| `label` | string | no |  |
+| `model` | string | no | Model of the whole disk, e.g. "SanDisk Ultra". |
+| `mounted` | boolean | yes |  |
+| `name` | string | yes | Directory under `/run/nasty/external`, shown in the Files page as
+`@external/<name>`. |
+| `size_bytes` | integer | yes |  |
+| `transport` | string | no | Connection reported by lsblk, e.g. "usb". |
+
 ### `Filesystem`
 
 | Field | Type | Required | Description |
@@ -8961,9 +9031,21 @@ Enum: `dhcp`
 means the override was refused too. |
 | `id` | string | yes |  |
 | `kind` | string | yes | What the job does, e.g. "device.remove". |
+| `progress` | `JobProgress` \| null | no | Byte progress and per-item errors, for jobs that report them (file copies). |
 | `started_at` | integer | yes | Unix seconds. |
 | `state` | `JobState` | yes |  |
 | `target` | string | yes | What within the filesystem it acts on, e.g. a device path. |
+| `user` | string | no | Who started it, for jobs only their starter may see (file copies). |
+
+### `JobProgress`
+
+| Field | Type | Required | Description |
+|-------|------|:--------:|-------------|
+| `bytes_done` | integer | yes |  |
+| `bytes_total` | integer | yes |  |
+| `current` | string | yes | The item being worked on, e.g. the file being copied. |
+| `error_count` | integer | yes |  |
+| `errors` | string[] | yes | The first errors, each naming what failed; `error_count` has them all. |
 
 ### `JobState`
 
@@ -9230,7 +9312,7 @@ the legacy plaintext `client_secret` when set. |
 (scrub/evacuate) | "pause" | "resume" (reconcile/copygc) | "none". |
 | `detail` | string | yes | Short operator-facing line, e.g. "Evacuating sdc" or "Scrub 42%". |
 | `fs` | string | yes | Filesystem the operation belongs to. |
-| `kind` | string | yes | "scrub" | "evacuate" | "remove" | "reconcile" | "copygc". |
+| `kind` | string | yes | "scrub" | "evacuate" | "remove" | "reconcile" | "copygc" | "copy". |
 | `last_duration_secs` | integer | no | Duration of the most recent scrub in seconds; scrub rows only. |
 | `last_outcome` | string | no | "ok" | "errors" | "failed" | "cancelled"; scrub rows only. |
 | `last_run_at` | integer | no | Unix seconds when the most recent scrub completed; scrub rows only. |
