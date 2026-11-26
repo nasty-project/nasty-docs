@@ -1074,6 +1074,8 @@ Create a new alert rule. Requires an unscoped session.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `condition` | `AlertCondition` | yes | Comparison operator applied between the metric value and the threshold. |
+| `disk_type` | `DiskType` \| null | no | Disk temperature rules only: limit the rule to one kind of disk.
+`None` applies it to every disk. |
 | `enabled` | boolean | yes | Whether the rule is active and evaluated. |
 | `id` | string | yes | Unique rule identifier. |
 | `metric` | `AlertMetric` | yes | The system metric this rule monitors. |
@@ -1086,6 +1088,8 @@ Create a new alert rule. Requires an unscoped session.
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `condition` | `AlertCondition` | yes | Comparison operator applied between the metric value and the threshold. |
+| `disk_type` | `DiskType` \| null | no | Disk temperature rules only: limit the rule to one kind of disk.
+`None` applies it to every disk. |
 | `enabled` | boolean | yes | Whether the rule is active and evaluated. |
 | `id` | string | yes | Unique rule identifier. |
 | `metric` | `AlertMetric` | yes | The system metric this rule monitors. |
@@ -1115,6 +1119,8 @@ Update an existing alert rule. Only provided fields are changed. Requires an uns
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `condition` | `AlertCondition` | yes | Comparison operator applied between the metric value and the threshold. |
+| `disk_type` | `DiskType` \| null | no | Disk temperature rules only: limit the rule to one kind of disk.
+`None` applies it to every disk. |
 | `enabled` | boolean | yes | Whether the rule is active and evaluated. |
 | `id` | string | yes | Unique rule identifier. |
 | `metric` | `AlertMetric` | yes | The system metric this rule monitors. |
@@ -8116,6 +8122,8 @@ Enum: `fs_usage_percent`
 | Field | Type | Required | Description |
 |-------|------|:--------:|-------------|
 | `condition` | `AlertCondition` | yes | Comparison operator applied between the metric value and the threshold. |
+| `disk_type` | `DiskType` \| null | no | Disk temperature rules only: limit the rule to one kind of disk.
+`None` applies it to every disk. |
 | `enabled` | boolean | yes | Whether the rule is active and evaluated. |
 | `id` | string | yes | Unique rule identifier. |
 | `metric` | `AlertMetric` | yes | The system metric this rule monitors. |
@@ -8721,6 +8729,10 @@ the same block device path but have distinct transport flags. |
 | `identity` | `BlockIdentity` | yes |  |
 | `partition_table_type` | string | no |  |
 | `path` | string | yes |  |
+
+### `DiskType`
+
+Enum: `hdd`, `ssd`, `nvme`
 
 ### `DmiBios`
 
